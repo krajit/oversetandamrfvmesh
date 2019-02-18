@@ -1,0 +1,82 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.5-dev                               |
+|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+startTime           0;
+
+startFrom           latestTime; //startTime;
+
+endTime             1; //0.1;
+
+stopAt              endTime;
+
+deltaT              0.01;
+
+adjustTimeStep      no;
+
+maxCo               2.0; // 0.5;
+
+writeControl        timeStep;//runTime; //timeStep; // runTime; //
+
+writeInterval       10; //0.0001; //100;
+
+writeFormat         ascii; //binary;
+
+writeCompression    compressed;
+
+timeFormat          general;
+
+timePrecision       9;
+
+//writePrecision      11;
+
+runTimeModifiable   yes;
+
+//functions
+//(
+//    meshFluxes
+//    {
+        // Type of functionObject
+//        type meshFluxes;
+
+        // Where to load it from (if not already in solver)
+//        functionObjectLibs ("libmeshFluxes.so");
+//    }
+//);
+
+
+
+functions
+{
+    forces
+    {
+        type                forces;
+        functionObjectLibs  ( "libforces.so" );
+        outputControl       timeStep;
+        outputInterval      1;
+        patches             (ball);
+        pName               p;
+        UName               U;
+        rhoName             rhoInf;
+        log                 true;
+        rhoInf              1;
+        CofR                (0 0 0);
+    }
+}
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

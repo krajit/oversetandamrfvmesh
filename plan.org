@@ -1,0 +1,18 @@
+#+Title: Oversetmesh with adaptive mesh refinement
+
+
+#+BEGIN_abstract
+OpenFoam now supports overset mesh. This is really helpful if the objective is to simulate flows around a moving object. However, if the position of the moving body is not known in advance, the entire domain need to be finely meshed to capture correct motion. OpenFoam do provide Adaptive Mesh Refinement (AMR) based on flow variables. However, it seems that in the out of the box condition of OpenFOAM, one can not used AMR and overset mesh in same example. This project combines overset mesh and AMR in the a same module. 
+#+END_abstract
+
+
+ 
+
+* Prepare a simple 2d case which runs fine with overset mesh. 
+
+
+
+
+* Experiments with few 2d case of AMR.
+
+* Make a plan for combining AMR and overset mesh.  

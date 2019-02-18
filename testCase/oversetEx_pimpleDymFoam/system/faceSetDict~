@@ -1,0 +1,54 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     3.2                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      faceSetDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Name of set to operate on
+name ball1;
+
+// One of clear/new/invert/add/delete|subset/list
+action subset;
+
+// Actions to apply to pointSet. These are all the topoSetSource's ending
+// in ..ToFace (see the meshTools library).
+topoSetSources
+(
+    // Copy elements from faceSet
+//    faceToFace
+//    {
+//        set sides;
+//    }
+
+    // All faces of patch
+//    patchToFace
+//    {
+//       name ball_patch0; //".*Wall";      // Name of patch, regular expressions allowed
+//   }
+
+
+    // Faces with face centre within box
+//     boxToFace
+//    {
+//        box  (-0.5 -0.5 -0.5) (0.5 0.5 0.5);
+//    }
+
+//    // Faces with normal to within certain angle aligned with vector.
+    normalToFace
+    {
+        normal (0.34202 0.93969 0);     // Vector 20 deg
+        cos    1.0;                       //  Tolerance (max cos of angle)
+    }
+);
+
+// ************************************************************************* //
