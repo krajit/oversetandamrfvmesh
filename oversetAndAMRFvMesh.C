@@ -40,8 +40,8 @@ namespace Foam
 Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
 :
     dynamicFvMesh(io),
-    meshOverset_(io),
-    meshDynamicRefine_(io)
+        meshOversetPtr_(new dynamicOversetFvMesh(io)),
+        meshDynamicRefinePtr_(new dynamicRefineFvMesh(io))
 {}
 
 
@@ -64,8 +64,8 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh
         std::move(allNeighbour),
         syncPar
     ),
-        meshOverset_(io),
-        meshDynamicRefine_(io)
+        meshOversetPtr_(new dynamicOversetFvMesh(io)),
+        meshDynamicRefinePtr_(new dynamicRefineFvMesh(io))
 {}
 
 
@@ -74,13 +74,16 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh
 bool Foam::oversetAndAMRFvMesh::update()
 {
 
-    //bool oversetMeshChange = meshOverset_.update();
+    bool testOut = meshOversetPtr_().update();
 
     // TODO: add mesh rifine later
-        bool dynamicRefineMeshChange = meshDynamicRefine_.update();
+//        bool dynamicRefineMeshChange = meshDynamicRefine_.update();
 
-    return dynamicRefineMeshChange;
+    //bool testOut = meshDynamicRefinePtr_().update();
+
+  //  return dynamicRefineMeshChange;
 //    return oversetMeshChange + dynamicRefineMeshChange;
+return testOut;
 }
 
 

@@ -30,10 +30,10 @@ class oversetAndAMRFvMesh
 
 
     // overset mesh member
-    dynamicOversetFvMesh meshOverset_;
+    autoPtr<dynamicOversetFvMesh> meshOversetPtr_;
 
     // dynamic refine member
-    dynamicRefineFvMesh meshDynamicRefine_;
+    autoPtr<dynamicRefineFvMesh> meshDynamicRefinePtr_;
 
 
 
