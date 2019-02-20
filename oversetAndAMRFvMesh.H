@@ -11,7 +11,14 @@
 
 #include "dynamicFvMesh.H"
 #include "dynamicOversetFvMesh.H"
-#include "dynamicRefineFvMesh.H"
+//#include "dynamicRefineFvMesh.H"
+
+
+#include "hexRef8.H"
+#include "bitSet.H"
+
+
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -26,11 +33,16 @@ class oversetAndAMRFvMesh
 :
     public dynamicOversetFvMesh
 {
-        //- No copy construct
-        oversetAndAMRFvMesh(const oversetAndAMRFvMesh&) = delete;
+    #include "dynamicRefineFvMeshMembers.H"
 
-        //- No copy assignment
-        void operator=(const oversetAndAMRFvMesh&) = delete;
+
+private:
+    //- No copy construct
+    oversetAndAMRFvMesh(const oversetAndAMRFvMesh&) = delete;
+
+    //- No copy assignment
+    void operator=(const oversetAndAMRFvMesh&) = delete;
+
 
 
 public:
@@ -41,13 +53,17 @@ public:
 
     // Constructors
 
-        //- Construct from IOobject
-        oversetAndAMRFvMesh(const IOobject& io);
+    //- Construct from IOobject
+    oversetAndAMRFvMesh(const IOobject& io);
 
     //- Destructor
     ~oversetAndAMRFvMesh() = default;
 
-        //- Dummy update function which does not change the mesh
+    // dynamic refine member function
+    #include "dynamicRefineFvMeshMemberFunctions.H"
+
+    bool refineUpdate();
+
      virtual bool update();
 };
 
