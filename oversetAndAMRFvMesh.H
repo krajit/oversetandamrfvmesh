@@ -24,19 +24,8 @@ namespace Foam
 
 class oversetAndAMRFvMesh
 :
-    public dynamicFvMesh
+    public dynamicOversetFvMesh
 {
-    // Private Member Functions
-
-
-    // overset mesh member
-    autoPtr<dynamicOversetFvMesh> meshOversetPtr_;
-
-    // dynamic refine member
-    autoPtr<dynamicRefineFvMesh> meshDynamicRefinePtr_;
-
-
-
         //- No copy construct
         oversetAndAMRFvMesh(const oversetAndAMRFvMesh&) = delete;
 
@@ -55,33 +44,11 @@ public:
         //- Construct from IOobject
         oversetAndAMRFvMesh(const IOobject& io);
 
-        //- Construct from components without boundary.
-        //  Boundary is added using addFvPatches() member function
-        oversetAndAMRFvMesh
-        (
-            const IOobject& io,
-            pointField&& points,
-            faceList&& faces,
-            labelList&& allOwner,
-            labelList&& allNeighbour,
-            const bool syncPar = true
-        );
-
-
     //- Destructor
     ~oversetAndAMRFvMesh() = default;
 
-
-    // Member Functions
-
-        //- Is mesh dynamic
-        virtual bool dynamic() const
-        {
-            return false;
-        }
-
         //- Dummy update function which does not change the mesh
-        virtual bool update();
+     virtual bool update();
 };
 
 
