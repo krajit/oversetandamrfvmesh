@@ -1408,9 +1408,11 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
 bool Foam::oversetAndAMRFvMesh::update()
 {
 
-    bool isMeshMovingWithRefine = refineUpdate();  
 
     bool isMeshMovingWithOverset = dynamicOversetFvMesh::update();
+
+    bool isMeshMovingWithRefine = refineUpdate();  
+
 
 
     // return true if either returns true; 

@@ -1,0 +1,174 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      dynamicMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+motionSolverLibs    ("libsixDoFRigidBodyMotion.so");
+
+dynamicFvMesh       dynamicRefineFvMesh; //oversetAndAMRFvMesh; //dynamicOversetFvMesh;
+
+dynamicOversetFvMeshCoeffs
+{
+}
+
+solver          sixDoFRigidBodyMotion;
+
+sixDoFRigidBodyMotionCoeffs
+{
+
+    patches         (floatingObject);
+    innerDistance   100.0;
+    outerDistance   101.0;
+
+    centreOfMass    (0.5 0.5 0.3);
+
+    // Cuboid dimensions
+    Lx              0.24;
+    Ly              0.24;
+    Lz              0.4;
+
+    // Density of the solid
+    rhoSolid        700;
+
+    // Cuboid mass
+    mass            #calc "$rhoSolid*$Lx*$Ly*$Lz";
+
+    // Cuboid moment of inertia about the centre of mass
+    momentOfInertia #codeStream
+    {
+        codeInclude
+        #{
+            #include "diagTensor.H"
+        #};
+
+        code
+        #{
+            scalar sqrLx = sqr($Lx);
+            scalar sqrLy = sqr($Ly);
+            scalar sqrLz = sqr($Lz);
+            os  <<
+                $mass
+               *diagTensor(sqrLy + sqrLz, sqrLx + sqrLz, sqrLx + sqrLy)/12.0;
+        #};
+    };
+
+    report          on;
+    accelerationRelaxation 0.6;
+
+    solver
+    {
+        type Newmark;
+    }
+
+    constraints
+    {
+
+        /*
+        fixedPoint
+        {
+             sixDoFRigidBodyMotionConstraint point;
+             centreOfRotation (0.5 0.45 0.1);
+        }
+        */
+
+        fixedLine
+        {
+            sixDoFRigidBodyMotionConstraint line;
+            //centreOfRotation (0.5 0.45 0.1);
+            direction (0 0 1);
+        }
+
+        /*
+        fixedAxis
+        {
+            sixDoFRigidBodyMotionConstraint axis;
+            axis (0 1 0);
+        }
+        */
+    }
+}
+
+
+// dynamicRefine
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v1806                                 |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      adaptiveRefineDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+/*--Begin: adaptive mesh refinement parameters-------*/
+//-----------------------------------------------------
+// How often to refine
+refineInterval  1;
+
+// Field to be refinement on
+field           alpha.water;
+
+// Refine field inbetween lower..upper
+lowerRefineLevel 0.001;
+upperRefineLevel 0.999;
+
+// If value < unrefineLevel unrefine
+unrefineLevel   10;
+
+// Have slower than 2:1 refinement
+nBufferLayers   1;
+
+// Refine cells only up to maxRefinement levels
+maxRefinement   2;
+
+// Stop refinement if maxCells reached
+maxCells        1500000;
+
+// Flux field and corresponding velocity field. Fluxes on changed
+// faces get recalculated by interpolating the velocity. Use 'none'
+// on surfaceScalarFields that do not need to be reinterpolated.
+correctFluxes
+(
+    (phi none)
+    (nHatf none)
+    (rhoPhi none)
+    (alphaPhi none)
+    (ghf none)
+    (phi0 none)
+    (dVf_ none)
+);
+
+// Write the refinement level as a volScalarField
+dumpLevel       true;
+
+//-----------------------------------------------------
+/*--End: adaptive mesh refinement parameters --*/
+
+
+
+
+
+
+// ************************************************************************* //
+
+
+
+// ************************************************************************* //
