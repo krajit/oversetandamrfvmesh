@@ -1,1 +1,0 @@
-../oversetPolyPatch/semiImplicitOversetGAMGInterfaceField.C

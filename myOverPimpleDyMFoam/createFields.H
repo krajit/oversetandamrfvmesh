@@ -70,3 +70,21 @@ autoPtr<incompressible::turbulenceModel> turbulence
 (
     incompressible::turbulenceModel::New(U, phi, laminarTransport)
 );
+
+
+// AK: Mar 9, 2019
+// This scalar field is registered here. This gets mapped from old mesht to new meshes in 
+// adaptive mesh refinement.
+// TODO: try to register this in the oversetAndAMRFvMesh constructor. 
+volScalarField zoneIDscalarField
+(
+    IOobject
+    (
+        "zoneIDscalarField",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
