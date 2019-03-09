@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/createControls.H
+../myOverPimpleDyMFoam/createControls.H

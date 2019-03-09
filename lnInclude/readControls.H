@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/readControls.H
+../myOverPimpleDyMFoam/readControls.H

@@ -90,6 +90,9 @@ int main(int argc, char *argv[])
 
         bool changed = mesh.update();
 
+        mesh.write();
+
+
         if (changed)
         {
             #include "setCellMask.H"

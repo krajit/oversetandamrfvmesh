@@ -31,10 +31,10 @@ bitSet& protectedCell()
 //virtual bool writeObject
 
 // AK: this method is creating problem. Work on it later
-bool writeObject
-(
-    IOstream::streamFormat fmt,
-    IOstream::versionNumber ver,
-    IOstream::compressionType cmp,
-    const bool valid
-) const;
+// bool writeObject
+// (
+//     IOstream::streamFormat fmt,
+//     IOstream::versionNumber ver,
+//     IOstream::compressionType cmp,
+//     const bool valid
+// ) const;

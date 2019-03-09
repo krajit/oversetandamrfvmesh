@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/UEqn.H
+../myOverPimpleDyMFoam/UEqn.H

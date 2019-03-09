@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/continuityErrs.H
+../myOverPimpleDyMFoam/continuityErrs.H

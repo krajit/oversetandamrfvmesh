@@ -1,0 +1,28 @@
+SOURCE = \
+cellCellStencil/cellCellStencil/cellCellStencil.C \
+cellCellStencil/cellVolumeWeight/cellVolumeWeightCellCellStencil.C \
+cellCellStencil/cellCellStencil/cellCellStencilObject.C \
+cellCellStencil/inverseDistance/inverseDistanceCellCellStencil.C \
+cellCellStencil/inverseDistance/waveMethod.C \
+cellCellStencil/inverseDistance/meshToMeshData.C \
+cellCellStencil/trackingInverseDistance/voxelMeshSearch.C \
+cellCellStencil/trackingInverseDistance/trackingInverseDistanceCellCellStencil.C \
+cellCellStencil/leastSquares/leastSquaresCellCellStencil.C \
+dynamicOversetLocalCopyFvMesh/dynamicOversetLocalCopyFvMesh.C \
+fvMeshPrimitiveLduAddressing/fvMeshPrimitiveLduAddressing.C \
+oversetPolyPatch/oversetPolyPatch.C \
+oversetPolyPatch/oversetLduInterface.C \
+oversetPolyPatch/oversetFvPatch.C \
+oversetPolyPatch/oversetFvPatchFields.C \
+oversetPolyPatch/oversetFvsPatchFields.C \
+oversetPolyPatch/oversetGAMGInterface.C \
+oversetPolyPatch/oversetGAMGInterfaceField.C \
+oversetPolyPatch/oversetPointPatch.C \
+oversetPolyPatch/oversetPointPatchFields.C \
+oversetPolyPatch/semiImplicitOversetFvPatchFields.C \
+oversetPolyPatch/semiImplicitOversetGAMGInterfaceField.C \
+oversetAdjustPhi/oversetAdjustPhi.C \
+regionsToCell/regionsToCell.C \
+lduPrimitiveProcessorInterface/lduPrimitiveProcessorInterface.C \
+
+# sources

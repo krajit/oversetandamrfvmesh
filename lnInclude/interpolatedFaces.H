@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/interpolatedFaces.H
+../myOverPimpleDyMFoam/interpolatedFaces.H

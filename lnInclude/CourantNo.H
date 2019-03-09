@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/CourantNo.H
+../myOverPimpleDyMFoam/CourantNo.H

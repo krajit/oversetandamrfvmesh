@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/correctPhi.H
+../myOverPimpleDyMFoam/correctPhi.H

@@ -1,4 +1,4 @@
 SOURCE = \
-tessting-overPimpleDyMFoam.C \
+myOverPimpleDyMFoam.C \
 
 # sources

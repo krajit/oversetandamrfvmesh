@@ -1225,6 +1225,30 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
     nRefinementIterations_(0),
     protectedCell_(nCells(), false)
 {
+
+    fvMesh & mesh = *this;
+
+
+    // Info << xy.thisDb().time().timeName() << endl;
+
+    // Info << "error" << exit(FatalError);
+
+
+
+    volScalarField volZoneID
+    (
+        IOobject
+        (
+            "zoneID2",
+            time().timeName(),
+            mesh.thisDb(),
+            IOobject::MUST_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh
+    );
+
+
     // AK: this entire scope {} is copied from constructor of dynamicRefineFvmesh
 
     // Read static part of dictionary
@@ -1414,6 +1438,11 @@ bool Foam::oversetAndAMRFvMesh::update()
     bool isMeshMovingWithRefine = refineUpdate();  
 
 
+    // looks like we need to reconstruct the dynamicOversetFvMesh after each refinement
+    const volScalarField& xy = (*this).lookupObject<volScalarField>("zoneID2");
+
+    Info << xy << endl; 
+
 
     // return true if either returns true; 
 
@@ -1422,52 +1451,52 @@ bool Foam::oversetAndAMRFvMesh::update()
 
 
 
-bool Foam::oversetAndAMRFvMesh::writeObject
-(
-    IOstream::streamFormat fmt,
-    IOstream::versionNumber ver,
-    IOstream::compressionType cmp,
-    const bool valid
-) const
-{
-    // Force refinement data to go to the current time directory.
-    const_cast<hexRef8&>(meshCutter_).setInstance(time().timeName());
+// bool Foam::oversetAndAMRFvMesh::writeObject
+// (
+//     IOstream::streamFormat fmt,
+//     IOstream::versionNumber ver,
+//     IOstream::compressionType cmp,
+//     const bool valid
+// ) const
+// {
+//     // Force refinement data to go to the current time directory.
+//     const_cast<hexRef8&>(meshCutter_).setInstance(time().timeName());
 
-    bool writeOk =
-    (
-        dynamicFvMesh::writeObject(fmt, ver, cmp, valid)
-     && meshCutter_.write(valid)
-    );
+//     bool writeOk =
+//     (
+//         dynamicFvMesh::writeObject(fmt, ver, cmp, valid)
+//      && meshCutter_.write(valid)
+//     );
 
-    if (dumpLevel_)
-    {
-        volScalarField scalarCellLevel
-        (
-            IOobject
-            (
-                "cellLevel",
-                time().timeName(),
-                *this,
-                IOobject::NO_READ,
-                IOobject::AUTO_WRITE,
-                false
-            ),
-            *this,
-            dimensionedScalar(dimless, Zero)
-        );
+//     if (dumpLevel_)
+//     {
+//         volScalarField scalarCellLevel
+//         (
+//             IOobject
+//             (
+//                 "cellLevel",
+//                 time().timeName(),
+//                 *this,
+//                 IOobject::NO_READ,
+//                 IOobject::AUTO_WRITE,
+//                 false
+//             ),
+//             *this,
+//             dimensionedScalar(dimless, Zero)
+//         );
 
-        const labelList& cellLevel = meshCutter_.cellLevel();
+//         const labelList& cellLevel = meshCutter_.cellLevel();
 
-        forAll(cellLevel, celli)
-        {
-            scalarCellLevel[celli] = cellLevel[celli];
-        }
+//         forAll(cellLevel, celli)
+//         {
+//             scalarCellLevel[celli] = cellLevel[celli];
+//         }
 
-        writeOk = writeOk && scalarCellLevel.write();
-    }
+//         writeOk = writeOk && scalarCellLevel.write();
+//     }
 
-    return writeOk;
-}
+//     return writeOk;
+// }
 
 
 // ************************************************************************* //

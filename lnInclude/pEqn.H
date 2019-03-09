@@ -1,1 +1,1 @@
-../tessting-overPimpleDyMFoam/pEqn.H
+../myOverPimpleDyMFoam/pEqn.H
