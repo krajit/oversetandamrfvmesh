@@ -1226,29 +1226,6 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
     protectedCell_(nCells(), false)
 {
 
-    fvMesh & mesh = *this;
-
-
-    // Info << xy.thisDb().time().timeName() << endl;
-
-    // Info << "error" << exit(FatalError);
-
-
-
-    volScalarField volZoneID
-    (
-        IOobject
-        (
-            "zoneID2",
-            time().timeName(),
-            mesh.thisDb(),
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh
-    );
-
-
     // AK: this entire scope {} is copied from constructor of dynamicRefineFvmesh
 
     // Read static part of dictionary
@@ -1436,12 +1413,6 @@ bool Foam::oversetAndAMRFvMesh::update()
     bool isMeshMovingWithOverset = dynamicOversetFvMesh::update();
 
     bool isMeshMovingWithRefine = refineUpdate();  
-
-
-    // looks like we need to reconstruct the dynamicOversetFvMesh after each refinement
-    const volScalarField& xy = (*this).lookupObject<volScalarField>("zoneID2");
-
-    Info << xy << endl; 
 
 
     // return true if either returns true; 

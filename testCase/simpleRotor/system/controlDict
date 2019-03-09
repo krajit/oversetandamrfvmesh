@@ -14,7 +14,7 @@ FoamFile
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-libs            ("liboversetLocalCopy.so" "liboversetAndAMR.so");
+libs            ("liboverset.so" "liboversetAndAMR.so");
 
 application     overPimpleDyMFoam;
 
