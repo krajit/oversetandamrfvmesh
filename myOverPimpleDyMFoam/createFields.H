@@ -73,8 +73,10 @@ autoPtr<incompressible::turbulenceModel> turbulence
 
 
 // AK: Mar 9, 2019
-// This scalar field is registered here. This gets mapped from old mesht to new meshes in 
+// - This scalar field is registered here. This gets mapped from old mesht to new meshes in 
 // adaptive mesh refinement.
+// - Next job is to map this value to labelIOList zoneID
+
 // TODO: try to register this in the oversetAndAMRFvMesh constructor. 
 volScalarField zoneIDscalarField
 (

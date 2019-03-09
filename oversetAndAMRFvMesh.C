@@ -1414,6 +1414,41 @@ bool Foam::oversetAndAMRFvMesh::update()
 
     bool isMeshMovingWithRefine = refineUpdate();  
 
+    // reset zoneID labelList
+
+    fvMesh & mesh = *this;
+
+    labelIOList & zoneID = const_cast<labelIOList &>(mesh.lookupObject<labelIOList>("zoneID"));
+
+    labelIOList* zoneIDPtr = new labelIOList
+        (
+            IOobject // this seems to be a dummy IOobject required by the constructor of labelIOList
+            (
+                "zoneID",
+                time().timeName(), //   mesh.facesInstance(),
+                //polyMesh::meshSubDir,
+                mesh,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            mesh.nCells()
+        );
+
+    zoneID = *zoneIDPtr;
+
+    volScalarField volZoneID = mesh.lookupObject<volScalarField>("zoneIDscalarField");
+
+    forAll(volZoneID, cellI)
+    {
+        zoneID[cellI] = label(volZoneID[cellI]);
+    }
+
+    //  zoneIDPtr->store(); // AK not sure what this does
+
+    // AK: zoneID is now successfully being registered and mapped between before and after refinement.
+    // TODO: See why it is crashing. 
+
+
 
     // return true if either returns true; 
 
