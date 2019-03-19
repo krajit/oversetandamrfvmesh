@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
         bool changed = mesh.update();
 
-        mesh.write();
+        runTime.write();
 
 
         if (changed)

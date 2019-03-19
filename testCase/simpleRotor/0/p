@@ -58,6 +58,11 @@ boundaryField
     {
         type            overset;
     }
+
+    frontAndBack
+    {
+        type            zeroGradient;
+    }
 }
 
 // ************************************************************************* //

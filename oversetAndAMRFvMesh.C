@@ -1448,8 +1448,6 @@ bool Foam::oversetAndAMRFvMesh::update()
     // AK: zoneID is now successfully being registered and mapped between before and after refinement.
     // TODO: See why it is crashing. 
 
-
-
     // return true if either returns true; 
 
     return (isMeshMovingWithOverset || isMeshMovingWithRefine);

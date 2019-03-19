@@ -34,7 +34,7 @@ unrefineLevel   10;
 nBufferLayers   1;
 
 // Refine cells only up to maxRefinement levels
-maxRefinement   2;
+maxRefinement   2; // was 2
 
 // Stop refinement if maxCells reached
 maxCells        1500000;
@@ -44,13 +44,13 @@ maxCells        1500000;
 // on surfaceScalarFields that do not need to be reinterpolated.
 correctFluxes
 (
-    (phi none)
-    (nHatf none)
-    (rhoPhi none)
-    (alphaPhi none)
-    (ghf none)
-    (phi0 none)
-    (dVf_ none)
+    (phi none) // AK, Mar 10: recalculation not needed because explicitly calculating this in main in every time step.
+//    (nHatf none)
+//    (rhoPhi none)
+//    (alphaPhi none)
+//    (ghf none)
+//    (phi0 none)
+//    (dVf_ none)
 );
 
 // Write the refinement level as a volScalarField
