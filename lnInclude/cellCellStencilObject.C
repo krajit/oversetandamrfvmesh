@@ -1,1 +1,0 @@
-../oversetLocalCopy/cellCellStencil/cellCellStencil/cellCellStencilObject.C

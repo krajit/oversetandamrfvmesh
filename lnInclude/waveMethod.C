@@ -1,1 +1,0 @@
-../oversetLocalCopy/cellCellStencil/inverseDistance/waveMethod.C

@@ -22,10 +22,19 @@ boundaryField
 {
     #includeEtc "caseDicts/setConstraintTypes"
 
-    "(walls|hole)"
+    walls
     {
-        type            zeroGradient;
+		type fixedValue;
+		value uniform 0;	
     }
+
+    hole
+    {
+		type zeroGradient;
+    }
+
+
+
 
 //    left1
 //    {
@@ -61,7 +70,7 @@ boundaryField
 
     frontAndBack
     {
-        type            zeroGradient;
+        type            empty;
     }
 }
 

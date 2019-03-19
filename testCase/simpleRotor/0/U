@@ -25,7 +25,7 @@ boundaryField
     walls
     {
         //type            slip;
-        type            uniformFixedValue;
+        type            zeroGradient; //uniformFixedValue;
         uniformValue    (0 0 0);
     }
 
@@ -59,7 +59,7 @@ boundaryField
 
     frontAndBack
     {
-        type            zeroGradient;
+        type            empty;
     }
 }
 

@@ -1,1 +1,0 @@
-../oversetLocalCopy/cellCellStencil/cellVolumeWeight/cellVolumeWeightCellCellStencil.C

@@ -32,6 +32,7 @@ License
 #include "volFields.H"
 #include "polyTopoChange.H"
 #include "surfaceFields.H"
+#include "fvCFD.H"
 #include "syncTools.H"
 #include "pointFields.H"
 #include "sigFpe.H"
@@ -48,9 +49,11 @@ namespace Foam
 
 // member function copied from dynamicRefineFvMesh//
 
-Foam::label Foam::oversetAndAMRFvMesh::count
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+label oversetAndAMRFvMesh::count
 (
-    const bitSet& l,
+    const PackedBoolList& l,
     const unsigned int val
 )
 {
@@ -61,21 +64,14 @@ Foam::label Foam::oversetAndAMRFvMesh::count
         {
             n++;
         }
-
-        // debug also serves to get-around Clang compiler trying to optimise
-        // out this forAll loop under O3 optimisation
-        if (debug)
-        {
-            Info<< "n=" << n << endl;
-        }
     }
-
     return n;
 }
 
-void Foam::oversetAndAMRFvMesh::calculateProtectedCells
+
+void oversetAndAMRFvMesh::calculateProtectedCells
 (
-    bitSet& unrefineableCell
+    PackedBoolList& unrefineableCell
 ) const
 {
     if (protectedCell_.empty())
@@ -91,11 +87,11 @@ void Foam::oversetAndAMRFvMesh::calculateProtectedCells
     // Get neighbouring cell level
     labelList neiLevel(nFaces()-nInternalFaces());
 
-    for (label facei = nInternalFaces(); facei < nFaces(); facei++)
+    for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
     {
-        neiLevel[facei-nInternalFaces()] = cellLevel[faceOwner()[facei]];
+        neiLevel[faceI-nInternalFaces()] = cellLevel[faceOwner()[faceI]];
     }
-    syncTools::swapBoundaryFaceList(*this, neiLevel);
+    syncTools::swapBoundaryFaceList(*this, neiLevel); // Ajit: , false);
 
 
     while (true)
@@ -103,67 +99,69 @@ void Foam::oversetAndAMRFvMesh::calculateProtectedCells
         // Pick up faces on border of protected cells
         boolList seedFace(nFaces(), false);
 
-        forAll(faceNeighbour(), facei)
+        forAll(faceNeighbour(), faceI)
         {
-            label own = faceOwner()[facei];
-            label nei = faceNeighbour()[facei];
-
-            bool ownProtected = unrefineableCell.test(own);
-            bool neiProtected = unrefineableCell.test(nei);
+            label own = faceOwner()[faceI];
+            bool ownProtected = (unrefineableCell.get(own) == 1);
+            label nei = faceNeighbour()[faceI];
+            bool neiProtected = (unrefineableCell.get(nei) == 1);
 
             if (ownProtected && (cellLevel[nei] > cellLevel[own]))
             {
-                seedFace[facei] = true;
+                seedFace[faceI] = true;
             }
             else if (neiProtected && (cellLevel[own] > cellLevel[nei]))
             {
-                seedFace[facei] = true;
+                seedFace[faceI] = true;
             }
         }
-        for (label facei = nInternalFaces(); facei < nFaces(); facei++)
+        for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
         {
-            label own = faceOwner()[facei];
-            bool ownProtected = unrefineableCell.test(own);
+            label own = faceOwner()[faceI];
+            bool ownProtected = (unrefineableCell.get(own) == 1);
             if
             (
                 ownProtected
-             && (neiLevel[facei-nInternalFaces()] > cellLevel[own])
+             && (neiLevel[faceI-nInternalFaces()] > cellLevel[own])
             )
             {
-                seedFace[facei] = true;
+                seedFace[faceI] = true;
             }
         }
 
-        syncTools::syncFaceList(*this, seedFace, orEqOp<bool>());
+        syncTools::syncFaceList(*this, seedFace, orEqOp<bool>()); //, false); Ajit: Change here
 
 
         // Extend unrefineableCell
         bool hasExtended = false;
 
-        for (label facei = 0; facei < nInternalFaces(); facei++)
+        for (label faceI = 0; faceI < nInternalFaces(); faceI++)
         {
-            if (seedFace[facei])
+            if (seedFace[faceI])
             {
-                label own = faceOwner()[facei];
-                if (unrefineableCell.set(own))
+                label own = faceOwner()[faceI];
+                if (unrefineableCell.get(own) == 0)
                 {
+                    unrefineableCell.set(own, 1);
                     hasExtended = true;
                 }
 
-                label nei = faceNeighbour()[facei];
-                if (unrefineableCell.set(nei))
+                label nei = faceNeighbour()[faceI];
+                if (unrefineableCell.get(nei) == 0)
                 {
+                    unrefineableCell.set(nei, 1);
                     hasExtended = true;
                 }
             }
         }
-        for (label facei = nInternalFaces(); facei < nFaces(); facei++)
+        for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
         {
-            if (seedFace[facei])
+            if (seedFace[faceI])
             {
-                label own = faceOwner()[facei];
-                if (unrefineableCell.set(own))
+                label own = faceOwner()[faceI];
+                if (unrefineableCell.get(own) == 0)
                 {
+                    unrefineableCell.set(own, 1);
                     hasExtended = true;
                 }
             }
@@ -177,7 +175,7 @@ void Foam::oversetAndAMRFvMesh::calculateProtectedCells
 }
 
 
-void Foam::oversetAndAMRFvMesh::readDict()
+void oversetAndAMRFvMesh::readDict()
 {
     dictionary refineDict
     (
@@ -185,35 +183,24 @@ void Foam::oversetAndAMRFvMesh::readDict()
         (
             IOobject
             (
-                "adaptiveRefineDict", // was "dynamicMeshDict",
-
+                "dynamicMeshDict",
                 time().constant(),
                 *this,
-                IOobject::MUST_READ_IF_MODIFIED,
+                IOobject::MUST_READ,
                 IOobject::NO_WRITE,
                 false
             )
-        ).optionalSubDict(typeName + "Coeffs")
+        ).subDict(typeName + "Coeffs")
     );
 
-    List<Pair<word>> fluxVelocities = List<Pair<word>>
-    (
-        refineDict.lookup("correctFluxes")
-    );
-    // Rework into hashtable.
-    correctFluxes_.resize(fluxVelocities.size());
-    forAll(fluxVelocities, i)
-    {
-        correctFluxes_.insert(fluxVelocities[i][0], fluxVelocities[i][1]);
-    }
+    correctFluxes_ = List<Pair<word> >(refineDict.lookup("correctFluxes"));
 
-    dumpLevel_ = refineDict.get<bool>("dumpLevel");
+    dumpLevel_ = Switch(refineDict.lookup("dumpLevel"));
 }
 
 
 // Refines cells, maps fields and recalculates (an approximate) flux
-Foam::autoPtr<Foam::mapPolyMesh>
-Foam::oversetAndAMRFvMesh::refine
+autoPtr<mapPolyMesh> oversetAndAMRFvMesh::refine
 (
     const labelList& cellsToRefine
 )
@@ -225,195 +212,172 @@ Foam::oversetAndAMRFvMesh::refine
     meshCutter_.setRefinement(cellsToRefine, meshMod);
 
     // Create mesh (with inflation), return map from old to new mesh.
-    autoPtr<mapPolyMesh> mapPtr = meshMod.changeMesh(*this, false);
-    mapPolyMesh& map = *mapPtr;
+    //autoPtr<mapPolyMesh> map = meshMod.changeMesh(*this, true);
+    autoPtr<mapPolyMesh> map = meshMod.changeMesh(*this, false);
 
     Info<< "Refined from "
-        << returnReduce(map.nOldCells(), sumOp<label>())
+        << returnReduce(map().nOldCells(), sumOp<label>())
         << " to " << globalData().nTotalCells() << " cells." << endl;
 
     if (debug)
     {
         // Check map.
-        for (label facei = 0; facei < nInternalFaces(); facei++)
+        for (label faceI = 0; faceI < nInternalFaces(); faceI++)
         {
-            label oldFacei = map.faceMap()[facei];
+            label oldFaceI = map().faceMap()[faceI];
 
-            if (oldFacei >= nInternalFaces())
+            if (oldFaceI >= nInternalFaces())
             {
-                FatalErrorInFunction
-                    << "New internal face:" << facei
-                    << " fc:" << faceCentres()[facei]
-                    << " originates from boundary oldFace:" << oldFacei
+                FatalErrorIn("oversetAndAMRFvMesh::refine(const labelList&)")
+                    << "New internal face:" << faceI
+                    << " fc:" << faceCentres()[faceI]
+                    << " originates from boundary oldFace:" << oldFaceI
                     << abort(FatalError);
             }
         }
     }
 
-    //    // Remove the stored tet base points
-    //    tetBasePtIsPtr_.clear();
-    //    // Remove the cell tree
-    //    cellTreePtr_.clear();
 
     // Update fields
     updateMesh(map);
 
+    // Move mesh
+    /*
+    pointField newPoints;
+    if (map().hasMotionPoints())
+    {
+        newPoints = map().preMotionPoints();
+    }
+    else
+    {
+        newPoints = points();
+    }
+    movePoints(newPoints);
+    */
+
     // Correct the flux for modified/added faces. All the faces which only
     // have been renumbered will already have been handled by the mapping.
     {
-        const labelList& faceMap = map.faceMap();
-        const labelList& reverseFaceMap = map.reverseFaceMap();
+        const labelList& faceMap = map().faceMap();
+        const labelList& reverseFaceMap = map().reverseFaceMap();
 
         // Storage for any master faces. These will be the original faces
         // on the coarse cell that get split into four (or rather the
         // master face gets modified and three faces get added from the master)
         labelHashSet masterFaces(4*cellsToRefine.size());
 
-        forAll(faceMap, facei)
+        forAll(faceMap, faceI)
         {
-            label oldFacei = faceMap[facei];
+            label oldFaceI = faceMap[faceI];
 
-            if (oldFacei >= 0)
+            if (oldFaceI >= 0)
             {
-                label masterFacei = reverseFaceMap[oldFacei];
+                label masterFaceI = reverseFaceMap[oldFaceI];
 
-                if (masterFacei < 0)
+                if (masterFaceI < 0)
                 {
-                    FatalErrorInFunction
-                        << "Problem: should not have removed faces"
+                    FatalErrorIn
+                    (
+                        "oversetAndAMRFvMesh::refine(const labelList&)"
+                    )   << "Problem: should not have removed faces"
                         << " when refining."
-                        << nl << "face:" << facei << abort(FatalError);
+                        << nl << "face:" << faceI << abort(FatalError);
                 }
-                else if (masterFacei != facei)
+                else if (masterFaceI != faceI)
                 {
-                    masterFaces.insert(masterFacei);
+                    masterFaces.insert(masterFaceI);
                 }
             }
         }
         if (debug)
         {
-            Pout<< "Found " << masterFaces.size() << " split faces " << endl;
+            Info<< "Found " << returnReduce(masterFaces.size(), sumOp<label>())
+                << " split faces " << endl;
         }
 
-        HashTable<surfaceScalarField*> fluxes
-        (
-            lookupClass<surfaceScalarField>()
-        );
-        forAllIter(HashTable<surfaceScalarField*>, fluxes, iter)
+        forAll(correctFluxes_, i)
         {
-            if (!correctFluxes_.found(iter.key()))
-            {
-                WarningInFunction
-                    << "Cannot find surfaceScalarField " << iter.key()
-                    << " in user-provided flux mapping table "
-                    << correctFluxes_ << endl
-                    << "    The flux mapping table is used to recreate the"
-                    << " flux on newly created faces." << endl
-                    << "    Either add the entry if it is a flux or use ("
-                    << iter.key() << " none) to suppress this warning."
-                    << endl;
-                continue;
-            }
-
-            const word& UName = correctFluxes_[iter.key()];
-
-            if (UName == "none")
-            {
-                continue;
-            }
-
-            if (UName == "NaN")
-            {
-                Pout<< "Setting surfaceScalarField " << iter.key()
-                    << " to NaN" << endl;
-
-                surfaceScalarField& phi = *iter();
-
-                sigFpe::fillNan(phi.primitiveFieldRef());
-
-                continue;
-            }
-
             if (debug)
             {
-                Pout<< "Mapping flux " << iter.key()
-                    << " using interpolated flux " << UName
+                Info<< "Mapping flux " << correctFluxes_[i][0]
+                    << " using interpolated flux " << correctFluxes_[i][1]
                     << endl;
             }
-
-            surfaceScalarField& phi = *iter();
-            const surfaceScalarField phiU
+            surfaceScalarField& phi = const_cast<surfaceScalarField&>
             (
+                lookupObject<surfaceScalarField>(correctFluxes_[i][0])
+            );
+            surfaceScalarField phiU =
                 fvc::interpolate
                 (
-                    lookupObject<volVectorField>(UName)
+                    lookupObject<volVectorField>(correctFluxes_[i][1])
                 )
-              & Sf()
-            );
+              & Sf();
 
             // Recalculate new internal faces.
-            for (label facei = 0; facei < nInternalFaces(); facei++)
+            for (label faceI = 0; faceI < nInternalFaces(); faceI++)
             {
-                label oldFacei = faceMap[facei];
+                label oldFaceI = faceMap[faceI];
 
-                if (oldFacei == -1)
+                if (oldFaceI == -1)
                 {
                     // Inflated/appended
-                    phi[facei] = phiU[facei];
+                    phi[faceI] = phiU[faceI];
                 }
-                else if (reverseFaceMap[oldFacei] != facei)
+                else if (reverseFaceMap[oldFaceI] != faceI)
                 {
                     // face-from-masterface
-                    phi[facei] = phiU[facei];
+                    phi[faceI] = phiU[faceI];
                 }
             }
 
             // Recalculate new boundary faces.
-            surfaceScalarField::Boundary& phiBf =
-                phi.boundaryFieldRef();
-            forAll(phiBf, patchi)
+            forAll(phi.boundaryFieldRef(), patchI)
             {
-                fvsPatchScalarField& patchPhi = phiBf[patchi];
+                fvsPatchScalarField& patchPhi = phi.boundaryFieldRef()[patchI];
                 const fvsPatchScalarField& patchPhiU =
-                    phiU.boundaryField()[patchi];
+                    phiU.boundaryFieldRef()[patchI];
 
-                label facei = patchPhi.patch().start();
+                label faceI = patchPhi.patch().patch().start();
 
                 forAll(patchPhi, i)
                 {
-                    label oldFacei = faceMap[facei];
+                    label oldFaceI = faceMap[faceI];
 
-                    if (oldFacei == -1)
+                    if (oldFaceI == -1)
                     {
                         // Inflated/appended
                         patchPhi[i] = patchPhiU[i];
                     }
-                    else if (reverseFaceMap[oldFacei] != facei)
+                    else if (reverseFaceMap[oldFaceI] != faceI)
                     {
                         // face-from-masterface
                         patchPhi[i] = patchPhiU[i];
                     }
 
-                    facei++;
+                    faceI++;
                 }
             }
 
             // Update master faces
-            for (const label facei : masterFaces)
+            forAllConstIter(labelHashSet, masterFaces, iter)
             {
-                if (isInternalFace(facei))
+                label faceI = iter.key();
+
+                if (isInternalFace(faceI))
                 {
-                    phi[facei] = phiU[facei];
+                    phi[faceI] = phiU[faceI];
                 }
                 else
                 {
-                    label patchi = boundaryMesh().whichPatch(facei);
-                    label i = facei - boundaryMesh()[patchi].start();
+                    label patchI = boundaryMesh().whichPatch(faceI);
+                    label i = faceI - boundaryMesh()[patchI].start();
 
                     const fvsPatchScalarField& patchPhiU =
-                        phiU.boundaryField()[patchi];
+                        phiU.boundaryFieldRef()[patchI];
 
-                    fvsPatchScalarField& patchPhi = phiBf[patchi];
+                    fvsPatchScalarField& patchPhi =
+                        phi.boundaryFieldRef()[patchI];
 
                     patchPhi[i] = patchPhiU[i];
                 }
@@ -422,18 +386,19 @@ Foam::oversetAndAMRFvMesh::refine
     }
 
 
+
     // Update numbering of cells/vertices.
     meshCutter_.updateMesh(map);
 
     // Update numbering of protectedCell_
     if (protectedCell_.size())
     {
-        bitSet newProtectedCell(nCells());
+        PackedBoolList newProtectedCell(nCells());
 
-        forAll(newProtectedCell, celli)
+        forAll(newProtectedCell, cellI)
         {
-            const label oldCelli = map.cellMap()[celli];
-            newProtectedCell.set(celli, protectedCell_.test(oldCelli));
+            label oldCellI = map().cellMap()[cellI];
+            newProtectedCell.set(cellI, protectedCell_.get(oldCellI));
         }
         protectedCell_.transfer(newProtectedCell);
     }
@@ -441,20 +406,21 @@ Foam::oversetAndAMRFvMesh::refine
     // Debug: Check refinement levels (across faces only)
     meshCutter_.checkRefinementLevels(-1, labelList(0));
 
-    return mapPtr;
+    return map;
 }
 
 
-Foam::autoPtr<Foam::mapPolyMesh>
-Foam::oversetAndAMRFvMesh::unrefine
+// Combines previously split cells, maps fields and recalculates
+// (an approximate) flux
+autoPtr<mapPolyMesh> oversetAndAMRFvMesh::unrefine
 (
-    const labelList& splitPoints
+    const labelList& splitEdges
 )
 {
     polyTopoChange meshMod(*this);
 
     // Play refinement commands into mesh changer.
-    meshCutter_.setUnrefinement(splitPoints, meshMod);
+    meshCutter_.setUnrefinement(splitEdges, meshMod);
 
 
     // Save information on faces that will be combined
@@ -463,119 +429,109 @@ Foam::oversetAndAMRFvMesh::unrefine
     // Find the faceMidPoints on cells to be combined.
     // for each face resulting of split of face into four store the
     // midpoint
-    Map<label> faceToSplitPoint(3*splitPoints.size());
+    Map<label> faceToSplitPoint(2*splitEdges.size());   //????
 
     {
-        forAll(splitPoints, i)
+        forAll(splitEdges, i)
         {
-            label pointi = splitPoints[i];
+            label edgeI = splitEdges[i];
 
-            const labelList& pEdges = pointEdges()[pointi];
+            const edge& e = edges()[edgeI];
 
-            forAll(pEdges, j)
+            forAll(e, j)
             {
-                label otherPointi = edges()[pEdges[j]].otherVertex(pointi);
+                label pointI = e[j];
 
-                const labelList& pFaces = pointFaces()[otherPointi];
+                const labelList& pFaces = pointFaces()[pointI];
 
-                forAll(pFaces, pFacei)
+                forAll(pFaces, pFaceI)
                 {
-                    faceToSplitPoint.insert(pFaces[pFacei], otherPointi);
+                    faceToSplitPoint.insert(pFaces[pFaceI], pointI);
                 }
             }
         }
     }
 
+   
 
     // Change mesh and generate map.
-    autoPtr<mapPolyMesh> mapPtr = meshMod.changeMesh(*this, false);
-    mapPolyMesh& map = *mapPtr;
+    //autoPtr<mapPolyMesh> map = meshMod.changeMesh(*this, true);
+    autoPtr<mapPolyMesh> map = meshMod.changeMesh(*this, false);
 
     Info<< "Unrefined from "
-        << returnReduce(map.nOldCells(), sumOp<label>())
+        << returnReduce(map().nOldCells(), sumOp<label>())
         << " to " << globalData().nTotalCells() << " cells."
         << endl;
 
     // Update fields
     updateMesh(map);
 
+
+    // Move mesh
+    /*
+    pointField newPoints;
+    if (map().hasMotionPoints())
+    {
+        newPoints = map().preMotionPoints();
+    }
+    else
+    {
+        newPoints = points();
+    }
+    movePoints(newPoints);
+    */
+
     // Correct the flux for modified faces.
     {
-        const labelList& reversePointMap = map.reversePointMap();
-        const labelList& reverseFaceMap = map.reverseFaceMap();
+        const labelList& reversePointMap = map().reversePointMap();
+        const labelList& reverseFaceMap = map().reverseFaceMap();
 
-        HashTable<surfaceScalarField*> fluxes
-        (
-            lookupClass<surfaceScalarField>()
-        );
-        forAllIter(HashTable<surfaceScalarField*>, fluxes, iter)
+        forAll(correctFluxes_, i)
         {
-            if (!correctFluxes_.found(iter.key()))
-            {
-                WarningInFunction
-                    << "Cannot find surfaceScalarField " << iter.key()
-                    << " in user-provided flux mapping table "
-                    << correctFluxes_ << endl
-                    << "    The flux mapping table is used to recreate the"
-                    << " flux on newly created faces." << endl
-                    << "    Either add the entry if it is a flux or use ("
-                    << iter.key() << " none) to suppress this warning."
-                    << endl;
-                continue;
-            }
-
-            const word& UName = correctFluxes_[iter.key()];
-
-            if (UName == "none")
-            {
-                continue;
-            }
-
             if (debug)
             {
-                Info<< "Mapping flux " << iter.key()
-                    << " using interpolated flux " << UName
+                Info<< "Mapping flux " << correctFluxes_[i][0]
+                    << " using interpolated flux " << correctFluxes_[i][1]
                     << endl;
             }
-
-            surfaceScalarField& phi = *iter();
-            surfaceScalarField::Boundary& phiBf =
-                phi.boundaryFieldRef();
-
-            const surfaceScalarField phiU
+            surfaceScalarField& phi = const_cast<surfaceScalarField&>
             (
+                lookupObject<surfaceScalarField>(correctFluxes_[i][0])
+            );
+            surfaceScalarField phiU =
                 fvc::interpolate
                 (
-                    lookupObject<volVectorField>(UName)
+                    lookupObject<volVectorField>(correctFluxes_[i][1])
                 )
-              & Sf()
-            );
-
+              & Sf();
 
             forAllConstIter(Map<label>, faceToSplitPoint, iter)
             {
-                label oldFacei = iter.key();
-                label oldPointi = iter();
+                label oldFaceI = iter.key();
+                label oldPointI = iter();
 
-                if (reversePointMap[oldPointi] < 0)
+                if (reversePointMap[oldPointI] < 0)
                 {
                     // midpoint was removed. See if face still exists.
-                    label facei = reverseFaceMap[oldFacei];
+                    label faceI = reverseFaceMap[oldFaceI];
 
-                    if (facei >= 0)
+                    if (faceI >= 0)
                     {
-                        if (isInternalFace(facei))
+                        if (isInternalFace(faceI))
                         {
-                            phi[facei] = phiU[facei];
+                            phi[faceI] = phiU[faceI];
                         }
                         else
                         {
-                            label patchi = boundaryMesh().whichPatch(facei);
-                            label i = facei - boundaryMesh()[patchi].start();
+                            label patchI = boundaryMesh().whichPatch(faceI);
+                            label i = faceI - boundaryMesh()[patchI].start();
 
                             const fvsPatchScalarField& patchPhiU =
-                                phiU.boundaryField()[patchi];
-                            fvsPatchScalarField& patchPhi = phiBf[patchi];
+                                phiU.boundaryFieldRef()[patchI];
+
+                            fvsPatchScalarField& patchPhi =
+                                phi.boundaryFieldRef()[patchI];
+
                             patchPhi[i] = patchPhiU[i];
                         }
                     }
@@ -591,14 +547,14 @@ Foam::oversetAndAMRFvMesh::unrefine
     // Update numbering of protectedCell_
     if (protectedCell_.size())
     {
-        bitSet newProtectedCell(nCells());
+        PackedBoolList newProtectedCell(nCells());
 
-        forAll(newProtectedCell, celli)
+        forAll(newProtectedCell, cellI)
         {
-            label oldCelli = map.cellMap()[celli];
-            if (oldCelli >= 0)
+            label oldCellI = map().cellMap()[cellI];
+            if (oldCellI >= 0)
             {
-                newProtectedCell.set(celli, protectedCell_.test(oldCelli));
+                newProtectedCell.set(cellI, protectedCell_.get(oldCellI));
             }
         }
         protectedCell_.transfer(newProtectedCell);
@@ -607,94 +563,95 @@ Foam::oversetAndAMRFvMesh::unrefine
     // Debug: Check refinement levels (across faces only)
     meshCutter_.checkRefinementLevels(-1, labelList(0));
 
-    return mapPtr;
+    return map;
 }
 
 
-Foam::scalarField
-Foam::oversetAndAMRFvMesh::maxPointField(const scalarField& pFld) const
+// Get max of connected point
+scalarField oversetAndAMRFvMesh::maxPointField(const scalarField& pFld) const
 {
     scalarField vFld(nCells(), -GREAT);
 
-    forAll(pointCells(), pointi)
+    forAll(pointCells(), pointI)
     {
-        const labelList& pCells = pointCells()[pointi];
+        const labelList& pCells = pointCells()[pointI];
 
         forAll(pCells, i)
         {
-            vFld[pCells[i]] = max(vFld[pCells[i]], pFld[pointi]);
+            vFld[pCells[i]] = max(vFld[pCells[i]], pFld[pointI]);
         }
     }
     return vFld;
 }
 
 
-Foam::scalarField
-Foam::oversetAndAMRFvMesh::maxCellField(const volScalarField& vFld) const
+// Get min of connected cell
+scalarField oversetAndAMRFvMesh::minCellField(const volScalarField& vFld) const
 {
-    scalarField pFld(nPoints(), -GREAT);
+    scalarField pFld(nPoints(), GREAT);
 
-    forAll(pointCells(), pointi)
+    forAll(pointCells(), pointI)
     {
-        const labelList& pCells = pointCells()[pointi];
+        const labelList& pCells = pointCells()[pointI];
 
         forAll(pCells, i)
         {
-            pFld[pointi] = max(pFld[pointi], vFld[pCells[i]]);
+            pFld[pointI] = min(pFld[pointI], vFld[pCells[i]]);
         }
     }
     return pFld;
 }
 
 
-Foam::scalarField
-Foam::oversetAndAMRFvMesh::cellToPoint(const scalarField& vFld) const
+// Simple (non-parallel) interpolation by averaging.
+scalarField oversetAndAMRFvMesh::cellToPoint(const scalarField& vFld) const
 {
     scalarField pFld(nPoints());
 
-    forAll(pointCells(), pointi)
+    forAll(pointCells(), pointI)
     {
-        const labelList& pCells = pointCells()[pointi];
+        const labelList& pCells = pointCells()[pointI];
 
         scalar sum = 0.0;
         forAll(pCells, i)
         {
             sum += vFld[pCells[i]];
         }
-        pFld[pointi] = sum/pCells.size();
+        pFld[pointI] = sum/pCells.size();
     }
     return pFld;
 }
 
 
-Foam::scalarField Foam::oversetAndAMRFvMesh::error
+// Calculate error. Is < 0 or distance from inbetween levels
+scalarField oversetAndAMRFvMesh::error
 (
     const scalarField& fld,
     const scalar minLevel,
     const scalar maxLevel
 ) const
 {
+    const scalar halfLevel = 0.5*(minLevel + maxLevel);
+
     scalarField c(fld.size(), -1);
 
     forAll(fld, i)
     {
-        scalar err = min(fld[i]-minLevel, maxLevel-fld[i]);
-
-        if (err >= 0)
+        if (fld[i] >= minLevel && fld[i] < maxLevel)
         {
-            c[i] = err;
+            c[i] = mag(fld[i] - halfLevel);
         }
     }
     return c;
 }
 
 
-void Foam::oversetAndAMRFvMesh::selectRefineCandidates
+void oversetAndAMRFvMesh::selectRefineCandidates
 (
     const scalar lowerRefineLevel,
     const scalar upperRefineLevel,
     const scalarField& vFld,
-    bitSet& candidateCell
+    PackedBoolList& candidateCell
 ) const
 {
     // Get error per cell. Is -1 (not to be refined) to >0 (to be refined,
@@ -713,52 +670,54 @@ void Foam::oversetAndAMRFvMesh::selectRefineCandidates
     );
 
     // Mark cells that are candidates for refinement.
-    forAll(cellError, celli)
+    forAll(cellError, cellI)
     {
-        if (cellError[celli] > 0)
+        if (cellError[cellI] > 0)
         {
-            candidateCell.set(celli);
+            candidateCell.set(cellI, 1);
         }
     }
 }
 
 
-Foam::labelList Foam::oversetAndAMRFvMesh::selectRefineCells
+labelList oversetAndAMRFvMesh::selectRefineCells
 (
     const label maxCells,
     const label maxRefinement,
-    const bitSet& candidateCell
+    const PackedBoolList& candidateCell
 ) const
 {
-    // Every refined cell causes 7 extra cells
-    label nTotToRefine = (maxCells - globalData().nTotalCells()) / 7;
+    // Every refined cell causes 3 extra cells in 2D
+    label nTotToRefine = (maxCells - globalData().nTotalCells()) / 3;
 
     const labelList& cellLevel = meshCutter_.cellLevel();
 
     // Mark cells that cannot be refined since they would trigger refinement
     // of protected cells (since 2:1 cascade)
-    bitSet unrefineableCell;
+    PackedBoolList unrefineableCell;
     calculateProtectedCells(unrefineableCell);
 
     // Count current selection
-    label nLocalCandidates = count(candidateCell, 1);
-    label nCandidates = returnReduce(nLocalCandidates, sumOp<label>());
+    label nCandidates = returnReduce(count(candidateCell, 1), sumOp<label>());
 
     // Collect all cells
-    DynamicList<label> candidates(nLocalCandidates);
+    DynamicList<label> candidates(nCells());
 
     if (nCandidates < nTotToRefine)
     {
-        forAll(candidateCell, celli)
+        forAll(candidateCell, cellI)
         {
             if
             (
-                cellLevel[celli] < maxRefinement
-             && candidateCell.test(celli)
-             && !unrefineableCell.test(celli)
+                cellLevel[cellI] < maxRefinement
+             && candidateCell.get(cellI) == 1
+             && (
+                    unrefineableCell.empty()
+                 || unrefineableCell.get(cellI) == 0
+                )
             )
             {
-                candidates.append(celli);
+                candidates.append(cellI);
             }
         }
     }
@@ -767,16 +726,19 @@ Foam::labelList Foam::oversetAndAMRFvMesh::selectRefineCells
         // Sort by error? For now just truncate.
         for (label level = 0; level < maxRefinement; level++)
         {
-            forAll(candidateCell, celli)
+            forAll(candidateCell, cellI)
             {
                 if
                 (
-                    cellLevel[celli] == level
-                 && candidateCell.test(celli)
-                 && !unrefineableCell.test(celli)
+                    cellLevel[cellI] == level
+                 && candidateCell.get(cellI) == 1
+                 && (
+                        unrefineableCell.empty()
+                     || unrefineableCell.get(cellI) == 0
+                    )
                 )
                 {
-                    candidates.append(celli);
+                    candidates.append(cellI);
                 }
             }
 
@@ -805,125 +767,89 @@ Foam::labelList Foam::oversetAndAMRFvMesh::selectRefineCells
 }
 
 
-Foam::labelList Foam::oversetAndAMRFvMesh::selectUnrefinePoints
+labelList oversetAndAMRFvMesh::selectUnrefineEdges
 (
     const scalar unrefineLevel,
-    const bitSet& markedCell,
+    const PackedBoolList& markedCell,
     const scalarField& pFld
 ) const
 {
     // All points that can be unrefined
-    const labelList splitPoints(meshCutter_.getSplitPoints());
+    const labelList splitEdges(meshCutter_.getSplitEdges());
 
+    DynamicList<label> newSplitEdges(splitEdges.size());
 
-    const labelListList& pointCells = this->pointCells();
-
-    // If we have any protected cells make sure they also are not being
-    // unrefined
-
-    bitSet protectedPoint(nPoints());
-
-    if (protectedCell_.size())
+    forAll(splitEdges, j)
     {
-        // Get all points on a protected cell
-        forAll(pointCells, pointI)
-        {
-            const labelList& pCells = pointCells[pointI];
+        label edgeJ = splitEdges[j];
 
-            forAll(pCells, pCellI)
+        const edge& e = edges()[edgeJ];
+
+        forAll(e, i)
+        {
+            label pointI = e[i];
+
+            bool hasMarked = true;
+
+            // Whas is the meaning of unrefineLevel?
+            // Does it makes sense to compare it with 
+            // the field value instead of the cell level as the name suggests?
+            if (pFld[pointI] < unrefineLevel)
             {
-                label cellI = pCells[pCellI];
+                hasMarked = false;
 
-                if (protectedCell_.test(cellI))
+                // Check that all cells are not marked
+                const labelList& pCells = pointCells()[pointI];
+
+                forAll(pCells, pCellI)
                 {
-                    protectedPoint.set(pointI);
-                    break;
-                }
-            }
-        }
-
-        syncTools::syncPointList
-        (
-            *this,
-            protectedPoint,
-            orEqOp<unsigned int>(),
-            0U
-        );
-
-        if (debug)
-        {
-            Info<< "From "
-                << returnReduce(protectedCell_.count(), sumOp<label>())
-                << " protected cells found "
-                << returnReduce(protectedPoint.count(), sumOp<label>())
-                << " protected points." << endl;
-        }
-    }
-
-
-    DynamicList<label> newSplitPoints(splitPoints.size());
-
-    forAll(splitPoints, i)
-    {
-        label pointi = splitPoints[i];
-
-        if (!protectedPoint[pointi] && pFld[pointi] < unrefineLevel)
-        {
-            // Check that all cells are not marked
-            const labelList& pCells = pointCells[pointi];
-
-            bool hasMarked = false;
-
-            forAll(pCells, pCelli)
-            {
-                if (markedCell.test(pCells[pCelli]))
-                {
-                    hasMarked = true;
-                    break;
+                    if (markedCell.get(pCells[pCellI]) == 1)
+                    {
+                        hasMarked = true;
+                        break;
+                    }
                 }
             }
 
             if (!hasMarked)
             {
-                newSplitPoints.append(pointi);
+                newSplitEdges.append(edgeJ);
+                break;
             }
         }
     }
 
 
-    newSplitPoints.shrink();
+    newSplitEdges.shrink();
 
     // Guarantee 2:1 refinement after unrefinement
     labelList consistentSet
     (
         meshCutter_.consistentUnrefinement
         (
-            newSplitPoints,
+            newSplitEdges,
             false
         )
     );
     Info<< "Selected " << returnReduce(consistentSet.size(), sumOp<label>())
-        << " split points out of a possible "
-        << returnReduce(splitPoints.size(), sumOp<label>())
+        << " split edges out of a possible "
+        << returnReduce(splitEdges.size(), sumOp<label>())
         << "." << endl;
 
     return consistentSet;
 }
 
 
-void Foam::oversetAndAMRFvMesh::extendMarkedCells
-(
-    bitSet& markedCell
-) const
+void oversetAndAMRFvMesh::extendMarkedCells(PackedBoolList& markedCell) const
 {
     // Mark faces using any marked cell
     boolList markedFace(nFaces(), false);
 
-    forAll(markedCell, celli)
+    forAll(markedCell, cellI)
     {
-        if (markedCell.test(celli))
+        if (markedCell.get(cellI) == 1)
         {
-            const cell& cFaces = cells()[celli];
+            const cell& cFaces = cells()[cellI];
 
             forAll(cFaces, i)
             {
@@ -932,96 +858,203 @@ void Foam::oversetAndAMRFvMesh::extendMarkedCells
         }
     }
 
-    syncTools::syncFaceList(*this, markedFace, orEqOp<bool>());
+    syncTools::syncFaceList(*this, markedFace, orEqOp<bool>()); // Ajit, false);
 
     // Update cells using any markedFace
-    for (label facei = 0; facei < nInternalFaces(); facei++)
+    for (label faceI = 0; faceI < nInternalFaces(); faceI++)
     {
-        if (markedFace[facei])
+        if (markedFace[faceI])
         {
-            markedCell.set(faceOwner()[facei]);
-            markedCell.set(faceNeighbour()[facei]);
+            markedCell.set(faceOwner()[faceI], 1);
+            markedCell.set(faceNeighbour()[faceI], 1);
         }
     }
-    for (label facei = nInternalFaces(); facei < nFaces(); facei++)
+    for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
     {
-        if (markedFace[facei])
+        if (markedFace[faceI])
         {
-            markedCell.set(faceOwner()[facei]);
+            markedCell.set(faceOwner()[faceI], 1);
         }
     }
 }
 
 
-void Foam::oversetAndAMRFvMesh::checkEightAnchorPoints
-(
-    bitSet& protectedCell,
-    label& nProtected
-) const
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
+:
+    dynamicOversetFvMesh(io),
+    meshCutter_(*this),
+    dumpLevel_(false),
+    nRefinementIterations_(0),
+    protectedCell_(nCells(), 0)
 {
     const labelList& cellLevel = meshCutter_.cellLevel();
     const labelList& pointLevel = meshCutter_.pointLevel();
 
-    labelList nAnchorPoints(nCells(), 0);
-
-    forAll(pointLevel, pointi)
-    {
-        const labelList& pCells = pointCells(pointi);
-
-        forAll(pCells, pCelli)
-        {
-            label celli = pCells[pCelli];
-
-            if (pointLevel[pointi] <= cellLevel[celli])
-            {
-                // Check if cell has already 8 anchor points -> protect cell
-                if (nAnchorPoints[celli] == 8)
-                {
-                    if (protectedCell.set(celli))
-                    {
-                        nProtected++;
-                    }
-                }
-
-                if (!protectedCell[celli])
-                {
-                    nAnchorPoints[celli]++;
-                }
-            }
-        }
-    }
-
-
-    forAll(protectedCell, celli)
-    {
-        if (!protectedCell.test(celli) && nAnchorPoints[celli] != 8)
-        {
-            protectedCell.set(celli);
-            nProtected++;
-        }
-    }
-}
-
-bool Foam::oversetAndAMRFvMesh::refineUpdate()
-{
-    // Re-read dictionary. Usually small so takes trivial amount of time
-    // compared to actual refinement. Also very useful to be able to modify
-    // on-the-fly.
     dictionary refineDict
     (
         IOdictionary
         (
             IOobject
             (
-                "adaptiveRefineDict",
+                "dynamicMeshDict",
                 time().constant(),
                 *this,
-                IOobject::MUST_READ_IF_MODIFIED,
+                IOobject::MUST_READ,
                 IOobject::NO_WRITE,
                 false
             )
-        ).optionalSubDict(typeName + "Coeffs")
+        ).subDict(typeName + "Coeffs")
     );
+
+    // Set cells that should not be refined.
+    // This is currently any cell which does not have 8 anchor points or
+    // uses any face which does not have 4 anchor points.
+    // Note: do not use cellPoint addressing
+
+    // Count number of points <= cellLevel
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    labelList nAnchors(nCells(), 0);
+
+    label nProtected = 0;
+
+    forAll(pointCells(), pointI)
+    {
+        const labelList& pCells = pointCells()[pointI];
+
+        forAll(pCells, i)
+        {
+            label cellI = pCells[i];
+
+            if (protectedCell_.get(cellI) == 0)
+            {
+                if (pointLevel[pointI] <= cellLevel[cellI])
+                {
+                    nAnchors[cellI]++;
+
+                    if (nAnchors[cellI] > 8)
+                    {
+                        protectedCell_.set(cellI, 1);
+                        nProtected++;
+                    }
+                }
+            }
+        }
+    }
+
+
+    // Count number of points <= faceLevel
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // Bit tricky since proc face might be one more refined than the owner since
+    // the coupled one is refined.
+
+    {
+        labelList neiLevel(nFaces());
+
+        for (label faceI = 0; faceI < nInternalFaces(); faceI++)
+        {
+            neiLevel[faceI] = cellLevel[faceNeighbour()[faceI]];
+        }
+        for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
+        {
+            neiLevel[faceI] = cellLevel[faceOwner()[faceI]];
+        }
+        syncTools::swapFaceList(*this, neiLevel); // Ajit, false);
+
+
+        boolList protectedFace(nFaces(), false);
+
+        forAll(faceOwner(), faceI)
+        {
+            label faceLevel = max
+            (
+                cellLevel[faceOwner()[faceI]],
+                neiLevel[faceI]
+            );
+
+            const face& f = faces()[faceI];
+
+            label nAnchors = 0;
+
+            forAll(f, fp)
+            {
+                if (pointLevel[f[fp]] <= faceLevel)
+                {
+                    nAnchors++;
+
+                    if (nAnchors > 4)
+                    {
+                        protectedFace[faceI] = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        syncTools::syncFaceList
+        (
+            *this,
+            protectedFace,
+            orEqOp<bool>()
+            //,false   // ajit commented
+        );
+
+        for (label faceI = 0; faceI < nInternalFaces(); faceI++)
+        {
+            if (protectedFace[faceI])
+            {
+                protectedCell_.set(faceOwner()[faceI], 1);
+                nProtected++;
+                protectedCell_.set(faceNeighbour()[faceI], 1);
+                nProtected++;
+            }
+        }
+        for (label faceI = nInternalFaces(); faceI < nFaces(); faceI++)
+        {
+            if (protectedFace[faceI])
+            {
+                protectedCell_.set(faceOwner()[faceI], 1);
+                nProtected++;
+            }
+        }
+    }
+
+    if (returnReduce(nProtected, sumOp<label>()) == 0)
+    {
+        protectedCell_.clear();
+    }
+}
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+// Foam::oversetAndAMRFvMesh::~oversetAndAMRFvMesh()
+// {}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+bool Foam::oversetAndAMRFvMesh::refineUpdate()
+{
+    // Re-read dictionary. Choosen since usually -small so trivial amount
+    // of time compared to actual refinement. Also very useful to be able
+    // to modify on-the-fly.
+    dictionary refineDict
+    (
+        IOdictionary
+        (
+            IOobject
+            (
+                "dynamicMeshDict",
+                time().constant(),
+                *this,
+                IOobject::MUST_READ,
+                IOobject::NO_WRITE,
+                false
+            )
+        ).subDict(typeName + "Coeffs")
+    );
+
 
     label refineInterval = readLabel(refineDict.lookup("refineInterval"));
 
@@ -1035,7 +1068,7 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
     }
     else if (refineInterval < 0)
     {
-        FatalErrorInFunction
+        FatalErrorIn("oversetAndAMRFvMesh::update()")
             << "Illegal refineInterval " << refineInterval << nl
             << "The refineInterval setting in the dynamicMeshDict should"
             << " be >= 1." << nl
@@ -1054,7 +1087,7 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
 
         if (maxCells <= 0)
         {
-            FatalErrorInFunction
+            FatalErrorIn("oversetAndAMRFvMesh::update()")
                 << "Illegal maximum number of cells " << maxCells << nl
                 << "The maxCells setting in the dynamicMeshDict should"
                 << " be > 0." << nl
@@ -1065,43 +1098,47 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
 
         if (maxRefinement <= 0)
         {
-            FatalErrorInFunction
+            FatalErrorIn("oversetAndAMRFvMesh::update()")
                 << "Illegal maximum refinement level " << maxRefinement << nl
                 << "The maxCells setting in the dynamicMeshDict should"
                 << " be > 0." << nl
                 << exit(FatalError);
         }
 
-        const word fieldName(refineDict.lookup("field"));
+        word field(refineDict.lookup("field"));
 
-        const volScalarField& vFld = lookupObject<volScalarField>(fieldName);
+        const volScalarField& vFld = lookupObject<volScalarField>(field);
 
         const scalar lowerRefineLevel =
             readScalar(refineDict.lookup("lowerRefineLevel"));
         const scalar upperRefineLevel =
             readScalar(refineDict.lookup("upperRefineLevel"));
-        const scalar unrefineLevel = refineDict.lookupOrDefault<scalar>
-        (
-            "unrefineLevel",
-            GREAT
-        );
+        const scalar unrefineLevel =
+            readScalar(refineDict.lookup("unrefineLevel"));
         const label nBufferLayers =
             readLabel(refineDict.lookup("nBufferLayers"));
+        const label nBufferLayersR =
+            readLabel(refineDict.lookup("nBufferLayersR"));
 
         // Cells marked for refinement or otherwise protected from unrefinement.
-        bitSet refineCell(nCells());
-
-        // Determine candidates for refinement (looking at field only)
-        selectRefineCandidates
-        (
-            lowerRefineLevel,
-            upperRefineLevel,
-            vFld,
-            refineCell
-        );
+        PackedBoolList refineCell(nCells());
 
         if (globalData().nTotalCells() < maxCells)
         {
+            // Determine candidates for refinement (looking at field only)
+            selectRefineCandidates
+            (
+                lowerRefineLevel,
+                upperRefineLevel,
+                vFld,
+                refineCell
+            );
+
+            for (label i = 0; i < nBufferLayersR; i++)
+            {
+                extendMarkedCells(refineCell);
+            }
+
             // Select subset of candidates. Take into account max allowable
             // cells, refinement level, protected cells.
             labelList cellsToRefine
@@ -1130,23 +1167,23 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
                     const labelList& cellMap = map().cellMap();
                     const labelList& reverseCellMap = map().reverseCellMap();
 
-                    bitSet newRefineCell(cellMap.size());
+                    PackedBoolList newRefineCell(cellMap.size());
 
-                    forAll(cellMap, celli)
+                    forAll(cellMap, cellI)
                     {
-                        label oldCelli = cellMap[celli];
+                        label oldCellI = cellMap[cellI];
 
-                        if (oldCelli < 0)
+                        if (oldCellI < 0)
                         {
-                            newRefineCell.set(celli);
+                            newRefineCell.set(cellI, 1);
                         }
-                        else if (reverseCellMap[oldCelli] != celli)
+                        else if (reverseCellMap[oldCellI] != cellI)
                         {
-                            newRefineCell.set(celli);
+                            newRefineCell.set(cellI, 1);
                         }
                         else
                         {
-                            newRefineCell.set(celli, refineCell.test(oldCelli));
+                            newRefineCell.set(cellI, refineCell.get(oldCellI));
                         }
                     }
                     refineCell.transfer(newRefineCell);
@@ -1166,26 +1203,26 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
 
         {
             // Select unrefineable points that are not marked in refineCell
-            labelList pointsToUnrefine
+            labelList edgesToUnrefine
             (
-                selectUnrefinePoints
+                selectUnrefineEdges
                 (
                     unrefineLevel,
                     refineCell,
-                    maxCellField(vFld)
+                    minCellField(vFld)
                 )
             );
 
-            label nSplitPoints = returnReduce
+            label nSplitEdges = returnReduce
             (
-                pointsToUnrefine.size(),
+                edgesToUnrefine.size(),
                 sumOp<label>()
             );
 
-            if (nSplitPoints > 0)
+            if (nSplitEdges > 0)
             {
                 // Refine/update mesh
-                unrefine(pointsToUnrefine);
+                unrefine(edgesToUnrefine);
 
                 hasChanged = true;
             }
@@ -1194,7 +1231,7 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
 
         if ((nRefinementIterations_ % 10) == 0)
         {
-            // Compact refinement history occasionally (how often?).
+            // Compact refinement history occassionally (how often?).
             // Unrefinement causes holes in the refinementHistory.
             const_cast<refinementHistory&>(meshCutter().history()).compact();
         }
@@ -1202,209 +1239,12 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
     }
 
     topoChanging(hasChanged);
-    if (hasChanged)
-    {
-        // Reset moving flag (if any). If not using inflation we'll not move,
-        // if are using inflation any follow on movePoints will set it.
-        moving(false);
-    }
 
     return hasChanged;
 }
 
 
 
-
-// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
-
-Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
-:
-    dynamicOversetFvMesh(io),
-    meshCutter_(*this),
-    dumpLevel_(false),
-    nRefinementIterations_(0),
-    protectedCell_(nCells(), false)
-{
-
-    // AK: this entire scope {} is copied from constructor of dynamicRefineFvmesh
-
-    // Read static part of dictionary
-    readDict();
-
-
-    const labelList& cellLevel = meshCutter_.cellLevel();
-    const labelList& pointLevel = meshCutter_.pointLevel();
-
-    // Set cells that should not be refined.
-    // This is currently any cell which does not have 8 anchor points or
-    // uses any face which does not have 4 anchor points.
-    // Note: do not use cellPoint addressing
-
-    // Count number of points <= cellLevel
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    labelList nAnchors(nCells(), 0);
-
-    label nProtected = 0;
-
-    forAll(pointCells(), pointi)
-    {
-        const labelList& pCells = pointCells()[pointi];
-
-        forAll(pCells, i)
-        {
-            label celli = pCells[i];
-
-            if (!protectedCell_.test(celli))
-            {
-                if (pointLevel[pointi] <= cellLevel[celli])
-                {
-                    nAnchors[celli]++;
-
-                    if (nAnchors[celli] > 8)
-                    {
-                        protectedCell_.set(celli);
-                        nProtected++;
-                    }
-                }
-            }
-        }
-    }
-
-
-    // Count number of points <= faceLevel
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Bit tricky since proc face might be one more refined than the owner since
-    // the coupled one is refined.
-
-    {
-        labelList neiLevel(nFaces());
-
-        for (label facei = 0; facei < nInternalFaces(); facei++)
-        {
-            neiLevel[facei] = cellLevel[faceNeighbour()[facei]];
-        }
-        for (label facei = nInternalFaces(); facei < nFaces(); facei++)
-        {
-            neiLevel[facei] = cellLevel[faceOwner()[facei]];
-        }
-        syncTools::swapFaceList(*this, neiLevel);
-
-
-        boolList protectedFace(nFaces(), false);
-
-        forAll(faceOwner(), facei)
-        {
-            label faceLevel = max
-            (
-                cellLevel[faceOwner()[facei]],
-                neiLevel[facei]
-            );
-
-            const face& f = faces()[facei];
-
-            label nAnchors = 0;
-
-            forAll(f, fp)
-            {
-                if (pointLevel[f[fp]] <= faceLevel)
-                {
-                    nAnchors++;
-
-                    if (nAnchors > 4)
-                    {
-                        protectedFace[facei] = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        syncTools::syncFaceList(*this, protectedFace, orEqOp<bool>());
-
-        for (label facei = 0; facei < nInternalFaces(); facei++)
-        {
-            if (protectedFace[facei])
-            {
-                protectedCell_.set(faceOwner()[facei]);
-                nProtected++;
-                protectedCell_.set(faceNeighbour()[facei]);
-                nProtected++;
-            }
-        }
-        for (label facei = nInternalFaces(); facei < nFaces(); facei++)
-        {
-            if (protectedFace[facei])
-            {
-                protectedCell_.set(faceOwner()[facei]);
-                nProtected++;
-            }
-        }
-
-        // Also protect any cells that are less than hex
-        forAll(cells(), celli)
-        {
-            const cell& cFaces = cells()[celli];
-
-            if (cFaces.size() < 6)
-            {
-                if (protectedCell_.set(celli))
-                {
-                    nProtected++;
-                }
-            }
-            else
-            {
-                forAll(cFaces, cFacei)
-                {
-                    if (faces()[cFaces[cFacei]].size() < 4)
-                    {
-                        if (protectedCell_.set(celli))
-                        {
-                            nProtected++;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Check cells for 8 corner points
-        checkEightAnchorPoints(protectedCell_, nProtected);
-    }
-
-    if (returnReduce(nProtected, sumOp<label>()) == 0)
-    {
-        protectedCell_.clear();
-    }
-    else
-    {
-        cellSet protectedCells(*this, "protectedCells", nProtected);
-        forAll(protectedCell_, celli)
-        {
-            if (protectedCell_[celli])
-            {
-                protectedCells.insert(celli);
-            }
-        }
-
-        Info<< "Detected " << returnReduce(nProtected, sumOp<label>())
-            << " cells that are protected from refinement."
-            << " Writing these to cellSet "
-            << protectedCells.name()
-            << "." << endl;
-
-        protectedCells.write();
-    }
-}
-
-// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
-
-// Foam::oversetAndAMRFvMesh::~oversetAndAMRFvMesh()
-// {}
-
-
-// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 bool Foam::oversetAndAMRFvMesh::update()
 {

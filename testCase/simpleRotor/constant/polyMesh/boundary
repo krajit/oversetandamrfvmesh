@@ -40,8 +40,8 @@ FoamFile
     }
     frontAndBack
     {
-        type            patch; //empty;
-//        inGroups        1(empty);
+        type            empty;
+        inGroups        1(empty);
         nFaces          3104;
         startFace       3240;
     }
