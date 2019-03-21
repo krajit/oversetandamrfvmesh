@@ -25,7 +25,7 @@ nBufferLayersR 2;
 refineInterval  1;
 
 // Field to be refinement on
-field           p;
+field           cellMask;
 
 // Refine field inbetween lower..upper
 lowerRefineLevel 0.001;
@@ -48,11 +48,11 @@ maxCells        200000;
 // on surfaceScalarFields that do not need to be reinterpolated.
 correctFluxes
 (
-    (phi none)
-    (nHatf none)
-    (rhoPhi none)
-    (alphaPhi0.water none)
-    (ghf none)
+//    (phi U)
+//    (nHatf none)
+//    (rhoPhi none)
+//    (alphaPhi0.water none)
+//    (ghf none)
 );
 
 // Write the refinement level as a volScalarField

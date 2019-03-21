@@ -890,24 +890,28 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject& io)
     nRefinementIterations_(0),
     protectedCell_(nCells(), 0)
 {
+
+    readDict();
+
     const labelList& cellLevel = meshCutter_.cellLevel();
     const labelList& pointLevel = meshCutter_.pointLevel();
 
-    dictionary refineDict
-    (
-        IOdictionary
-        (
-            IOobject
-            (
-                "dynamicMeshDict",
-                time().constant(),
-                *this,
-                IOobject::MUST_READ,
-                IOobject::NO_WRITE,
-                false
-            )
-        ).subDict(typeName + "Coeffs")
-    );
+    // dictionary refineDict
+    // (
+    //     IOdictionary
+    //     (
+    //         IOobject
+    //         (
+    //             "dynamicMeshDict",
+    //             time().constant(),
+    //             *this,
+    //             IOobject::MUST_READ,
+    //             IOobject::NO_WRITE,
+    //             false
+    //         )
+    //     ).subDict(typeName + "Coeffs")
+    // );
+
 
     // Set cells that should not be refined.
     // This is currently any cell which does not have 8 anchor points or
@@ -1250,7 +1254,7 @@ bool Foam::oversetAndAMRFvMesh::update()
 {
 
 
-    bool isMeshMovingWithOverset = dynamicOversetFvMesh::update();
+
 
     bool isMeshMovingWithRefine = refineUpdate();  
 
@@ -1283,12 +1287,19 @@ bool Foam::oversetAndAMRFvMesh::update()
         zoneID[cellI] = label(volZoneID[cellI]);
     }
 
-    //  zoneIDPtr->store(); // AK not sure what this does
+    zoneIDPtr->store(); // AK not sure what this does
 
     // AK: zoneID is now successfully being registered and mapped between before and after refinement.
     // TODO: See why it is crashing. 
 
+
+
+        bool isMeshMovingWithOverset = dynamicOversetFvMesh::update();
+
     // return true if either returns true; 
+
+
+
 
     return (isMeshMovingWithOverset || isMeshMovingWithRefine);
 }

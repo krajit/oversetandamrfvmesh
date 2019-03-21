@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 
         bool changed = mesh.update();
 
-        runTime.write();
+//        runTime.write();
 
 
         if (changed)
@@ -62,16 +62,25 @@ int main(int argc, char *argv[])
             #include "setInterpolatedCells.H"
         }
 
-        // Calculate absolute flux from the mapped surface velocity
-        phi = mesh.Sf() & Uf;
 
-        if (mesh.changing() && correctPhi)
-        {
+        // if ((mesh.changing() && correctPhi) || mesh.topoChanging())
+        // {
+
+            // Calculate absolute flux from the mapped surface velocity
+            // Note: temporary fix until mapped Uf is assessed
+            Uf = fvc::interpolate(U);
+
+            // Calculate absolute flux from the mapped surface velocity
+            phi = mesh.Sf() & Uf;
+
             #include "correctPhi.H"
-        }
 
-        // Make the flux relative to the mesh motion
-        fvc::makeRelative(phi, U);
+
+            // Make the flux relative to the mesh motion
+            fvc::makeRelative(phi, U);
+
+//          }
+
 
         if (mesh.changing() && checkMeshCourantNo)
         {

@@ -891,7 +891,6 @@ $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/setInitialDeltaT.H \
 readControls.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/readTimeControls.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/setDeltaT.H \
-correctPhi.H \
 $(WM_PROJECT_DIR)/src/dynamicFvMesh/lnInclude/meshCourantNo.H \
 UEqn.H \
 pEqn.H \
