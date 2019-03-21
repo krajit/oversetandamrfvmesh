@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
         }
 
 
-        // if ((mesh.changing() && correctPhi) || mesh.topoChanging())
-        // {
+        if ((mesh.changing() && correctPhi) || mesh.topoChanging())
+        {
 
             // Calculate absolute flux from the mapped surface velocity
             // Note: temporary fix until mapped Uf is assessed
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
             // Make the flux relative to the mesh motion
             fvc::makeRelative(phi, U);
 
-//          }
+         }
 
 
         if (mesh.changing() && checkMeshCourantNo)

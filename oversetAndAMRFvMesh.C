@@ -1253,13 +1253,9 @@ bool Foam::oversetAndAMRFvMesh::refineUpdate()
 bool Foam::oversetAndAMRFvMesh::update()
 {
 
-
-
-
     bool isMeshMovingWithRefine = refineUpdate();  
 
     // reset zoneID labelList
-
     fvMesh & mesh = *this;
 
     labelIOList & zoneID = const_cast<labelIOList &>(mesh.lookupObject<labelIOList>("zoneID"));
