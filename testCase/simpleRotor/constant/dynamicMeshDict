@@ -25,11 +25,11 @@ nBufferLayersR 2;
 refineInterval  1;
 
 // Field to be refinement on
-field           cellMask;
+field           refinementField; //cellMask;
 
 // Refine field inbetween lower..upper
-lowerRefineLevel 0.001;
-upperRefineLevel 0.999;
+lowerRefineLevel 0.5; //0.001;
+upperRefineLevel 1.5; //0.999;
 
 // If value < unrefineLevel unrefine
 unrefineLevel   10;
