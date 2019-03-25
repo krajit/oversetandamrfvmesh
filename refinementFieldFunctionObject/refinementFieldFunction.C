@@ -113,69 +113,73 @@ bool Foam::functionObjects::refinementFieldFunction::execute()
 
     const volScalarField zoneIDscalarField = lookupObject<volScalarField>("zoneIDscalarField");
 
-    // get the bounding box containing the zoneID with labels 1
-    const vectorField &cellCenters = mesh_.C();
+    const volScalarField cellMaskField = lookupObject<volScalarField>("cellMask");
+    const volScalarField interpolatedField = lookupObject<volScalarField>("interpolatedCells");
 
-    scalar xMin = GREAT;
-    scalar yMin = GREAT;
-    scalar zMin = GREAT;
 
-    scalar xMax = SMALL;
-    scalar yMax = SMALL;
-    scalar zMax = SMALL;
+    // // get the bounding box containing the zoneID with labels 1
+    // const vectorField &cellCenters = mesh_.C();
 
-    // loop over zoneID == 1, and get its bounding box
-    forAll(cellCenters, celli)
-    {
-        if (zoneIDscalarField[celli] >= 0.5)
-        {
-            xMin = min(xMin, cellCenters[celli].x());
-            yMin = min(yMin, cellCenters[celli].y());
-            zMin = min(yMin, cellCenters[celli].z());
+    // scalar xMin = GREAT;
+    // scalar yMin = GREAT;
+    // scalar zMin = GREAT;
 
-            xMax = max(xMax, cellCenters[celli].x());
-            yMax = max(yMax, cellCenters[celli].y());
-            zMax = max(zMax, cellCenters[celli].z());
-        }
-    }
+    // scalar xMax = SMALL;
+    // scalar yMax = SMALL;
+    // scalar zMax = SMALL;
 
-    // add a user defined buffer thickness
-    xMin = xMin - xBuffer_;
-    xMax = xMax + xBuffer_;
-
-    yMin = yMin - yBuffer_;
-    yMax = yMax + yBuffer_;
-
-    zMin = zMin - zBuffer_;
-    zMax = zMax + zBuffer_;
-
-    // loop over zoneID == 0, and mark cells which lie inside the bounding box
-    forAll(cellCenters, celli)
-    {
-        if (zoneIDscalarField[celli] < 0.5)
-        {
-            scalar xi = cellCenters[celli].x();
-            scalar yi = cellCenters[celli].y();
-            scalar zi = cellCenters[celli].z();
-
-            if ((xMin <= xi) && (xi <= xMax))
-            {
-                if ((yMin <= yi) && (yi <= yMax))
-                {
-                    if ((zMin <= zi) && (zi <= zMax))
-                    {
-                        refinementField[celli] = 1.0;
-                    }
-                }
-            }
-        }
-    }
-
-    // forAll(refinementField,i)
+    // // loop over zoneID == 1, and get its bounding box
+    // forAll(cellCenters, celli)
     // {
-    //     refinementField[i] = 0.002;
+    //     if (zoneIDscalarField[celli] >= 0.5)
+    //     {
+    //         xMin = min(xMin, cellCenters[celli].x());
+    //         yMin = min(yMin, cellCenters[celli].y());
+    //         zMin = min(yMin, cellCenters[celli].z());
 
+    //         xMax = max(xMax, cellCenters[celli].x());
+    //         yMax = max(yMax, cellCenters[celli].y());
+    //         zMax = max(zMax, cellCenters[celli].z());
+    //     }
     // }
+
+    // // add a user defined buffer thickness
+    // xMin = xMin - xBuffer_;
+    // xMax = xMax + xBuffer_;
+
+    // yMin = yMin - yBuffer_;
+    // yMax = yMax + yBuffer_;
+
+    // zMin = zMin - zBuffer_;
+    // zMax = zMax + zBuffer_;
+
+    // // loop over zoneID == 0, and mark cells which lie inside the bounding box
+    // forAll(cellCenters, celli)
+    // {
+    //     if (zoneIDscalarField[celli] < 0.5)
+    //     {
+    //         scalar xi = cellCenters[celli].x();
+    //         scalar yi = cellCenters[celli].y();
+    //         scalar zi = cellCenters[celli].z();
+
+    //         if ((xMin <= xi) && (xi <= xMax))
+    //         {
+    //             if ((yMin <= yi) && (yi <= yMax))
+    //             {
+    //                 if ((zMin <= zi) && (zi <= zMax))
+    //                 {
+    //                     refinementField[celli] = 1.0;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+
+    forAll(refinementField,i)
+    {
+        refinementField[i] = 1.0 + zoneIDscalarField[i]+interpolatedField[i]; // zero zone id * interpolated cells
+        // refine cells with value == 1;
+    }
 
     // if (foundObject<turbulenceModel>(turbulenceModel::propertiesName))
     // {
