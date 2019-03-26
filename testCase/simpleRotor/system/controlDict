@@ -53,20 +53,4 @@ adjustTimeStep  no; //yes;
 maxCo           1;
 
 
-functions
-{
-
-	refinementFieldFunction1
-    {
-        type        refinementFieldFunction;
-        libs        ("librefinementfieldFunctionObjects.so");
-		writeControl  writeTime;   
-		xBuffer      0.0005;
-		yBuffer      0.0005;
-		zBuffer      0.001;
-     
-    }
-
-}
-
 // ************************************************************************* //

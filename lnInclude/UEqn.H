@@ -1,1 +1,1 @@
-../myOverPimpleDyMFoam/UEqn.H
+../topoOverPimpleDyMFoam/UEqn.H

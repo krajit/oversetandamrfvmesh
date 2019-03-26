@@ -1,5 +1,5 @@
-$(OBJECTS_DIR)/myOverPimpleDyMFoam.C.dep: \
-myOverPimpleDyMFoam.C \
+$(OBJECTS_DIR)/topoOverPimpleDyMFoam.C.dep: \
+topoOverPimpleDyMFoam.C \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fvCFD.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/parRun.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Pstream.H \
