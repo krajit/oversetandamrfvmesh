@@ -805,18 +805,30 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject &io)
 
     fvMesh &mesh = *this;
 
+    // AK: register a volScalarField version of zoneID. 
+    // The mapping fuctions of mesh refine engine, only maps volField and not the label list zoneID
     volScalarField *zoneIDscalarFieldPtr(
         new volScalarField(
             IOobject(
                 "zoneIDscalarField",
                 mesh.time().timeName(),
                 mesh,
-                IOobject::MUST_READ,
-                IOobject::AUTO_WRITE),
-            mesh));
+                IOobject::NO_READ,
+                IOobject::NO_WRITE),
+            mesh,
+            dimensionedScalar(dimless, Zero)));
 
     mesh.objectRegistry::store(zoneIDscalarFieldPtr);
 
+    // map values from zoneID to zoneIDscalarField
+    const labelIOList &zoneID = mesh.lookupObject<labelIOList>("zoneID");
+    volScalarField &zoneIDscalar = const_cast<volScalarField &>(lookupObject<volScalarField>("zoneIDscalarField"));
+    forAll(zoneID, celli)
+    {
+        zoneIDscalar[celli] = zoneID[celli];
+    }
+
+    // refinement engine tags cells for refinement based on this field
     volScalarField *refinementFieldPtr(
         new volScalarField(
             IOobject(
@@ -830,6 +842,8 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject &io)
 
     mesh.objectRegistry::store(refinementFieldPtr);
 
+
+    // constructors copied from dynamicRefineFvMesh
     readDict();
 
     const labelList &cellLevel = meshCutter_.cellLevel();
@@ -1164,7 +1178,7 @@ bool Foam::oversetAndAMRFvMesh::update()
     // setup the refinement variable
     volScalarField &refinementField = const_cast<volScalarField &>(lookupObject<volScalarField>("refinementField"));
 
-//    const labelIOList &zoneID = lookupObject<labelIOList>("zoneID");
+    //    const labelIOList &zoneID = lookupObject<labelIOList>("zoneID");
 
     // get the bounding box containing the zoneID with labels 1
     const vectorField &cellCenters = mesh.C();
@@ -1216,7 +1230,7 @@ bool Foam::oversetAndAMRFvMesh::update()
 
     zoneID = *zoneIDPtr;
 
-    volScalarField volZoneID = mesh.lookupObject<volScalarField>("zoneIDscalarField");
+    const volScalarField &volZoneID = mesh.lookupObject<volScalarField>("zoneIDscalarField");
 
     forAll(volZoneID, cellI)
     {
@@ -1226,7 +1240,6 @@ bool Foam::oversetAndAMRFvMesh::update()
     zoneIDPtr->store(); // AK not sure what this does
 
     // AK: zoneID is now successfully being registered and mapped between before and after refinement.
-    // TODO: See why it is crashing.
 
     bool isMeshMovingWithOverset = dynamicOversetFvMesh::update();
 
