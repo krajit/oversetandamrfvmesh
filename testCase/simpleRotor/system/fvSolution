@@ -74,7 +74,7 @@ PIMPLE
     correctPhi          no;
     nOuterCorrectors    1;
     nCorrectors         2;
-    nNonOrthogonalCorrectors 0;
+    nNonOrthogonalCorrectors 1;
 
     ddtCorr             false;
 

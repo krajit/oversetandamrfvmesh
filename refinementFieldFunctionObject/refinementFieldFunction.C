@@ -75,18 +75,18 @@ Foam::functionObjects::refinementFieldFunction::refinementFieldFunction(
 
     writeFileHeader(file());
 
-    // volScalarField *refinementFieldPtr(
-    //     new volScalarField(
-    //         IOobject(
-    //             typeName,
-    //             mesh_.time().timeName(),
-    //             mesh_,
-    //             IOobject::NO_READ,
-    //             IOobject::AUTO_WRITE),
-    //         mesh_,
-    //         dimensionedScalar(dimless, Zero)));
+    volScalarField *refinementFieldPtr(
+        new volScalarField(
+            IOobject(
+                "refinementField",
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE),
+            mesh_,
+            dimensionedScalar(dimless, Zero)));
 
-    // mesh_.objectRegistry::store(refinementFieldPtr);
+    mesh_.objectRegistry::store(refinementFieldPtr);
 }
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
@@ -107,136 +107,48 @@ bool Foam::functionObjects::refinementFieldFunction::read(const dictionary &dict
 
 bool Foam::functionObjects::refinementFieldFunction::execute()
 {
+
     volScalarField &refinementField =
         const_cast<volScalarField &>(
             lookupObject<volScalarField>("refinementField"));
 
-    const volScalarField zoneIDscalarField = lookupObject<volScalarField>("zoneIDscalarField");
-
-    const volScalarField cellMaskField = lookupObject<volScalarField>("cellMask");
-    const volScalarField interpolatedField = lookupObject<volScalarField>("interpolatedCells");
+    const labelIOList& zoneID = lookupObject<labelIOList>("zoneID");
 
 
-    // // get the bounding box containing the zoneID with labels 1
-    // const vectorField &cellCenters = mesh_.C();
+    // get the bounding box containing the zoneID with labels 1
+    const vectorField &cellCenters = mesh_.C();
 
-    // scalar xMin = GREAT;
-    // scalar yMin = GREAT;
-    // scalar zMin = GREAT;
-
-    // scalar xMax = SMALL;
-    // scalar yMax = SMALL;
-    // scalar zMax = SMALL;
-
-    // // loop over zoneID == 1, and get its bounding box
-    // forAll(cellCenters, celli)
-    // {
-    //     if (zoneIDscalarField[celli] >= 0.5)
-    //     {
-    //         xMin = min(xMin, cellCenters[celli].x());
-    //         yMin = min(yMin, cellCenters[celli].y());
-    //         zMin = min(yMin, cellCenters[celli].z());
-
-    //         xMax = max(xMax, cellCenters[celli].x());
-    //         yMax = max(yMax, cellCenters[celli].y());
-    //         zMax = max(zMax, cellCenters[celli].z());
-    //     }
-    // }
-
-    // // add a user defined buffer thickness
-    // xMin = xMin - xBuffer_;
-    // xMax = xMax + xBuffer_;
-
-    // yMin = yMin - yBuffer_;
-    // yMax = yMax + yBuffer_;
-
-    // zMin = zMin - zBuffer_;
-    // zMax = zMax + zBuffer_;
-
-    // // loop over zoneID == 0, and mark cells which lie inside the bounding box
-    // forAll(cellCenters, celli)
-    // {
-    //     if (zoneIDscalarField[celli] < 0.5)
-    //     {
-    //         scalar xi = cellCenters[celli].x();
-    //         scalar yi = cellCenters[celli].y();
-    //         scalar zi = cellCenters[celli].z();
-
-    //         if ((xMin <= xi) && (xi <= xMax))
-    //         {
-    //             if ((yMin <= yi) && (yi <= yMax))
-    //             {
-    //                 if ((zMin <= zi) && (zi <= zMax))
-    //                 {
-    //                     refinementField[celli] = 1.0;
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    forAll(refinementField,i)
+    forAll(cellCenters, celli)
     {
-        refinementField[i] = 1.0 + zoneIDscalarField[i]+interpolatedField[i]; // zero zone id * interpolated cells
-        // refine cells with value == 1;
+        // reset
+        refinementField[celli] = -1.0;
+
+        // only loop over front mesh
+        if (zoneID[celli] == 1)
+        {
+            refinementField[celli] = 2.0;
+
+            scalar cellDistFrontToBack = GREAT;
+            label backgroundNearestCell = 0;
+
+            // now loop over background mesh to find the background cell closest to this cellj
+            forAll(cellCenters, cellj)
+            {
+                // filter out the background mesh
+                if (zoneID[cellj] == 0)
+                {
+                    if (magSqr(cellCenters[celli] - cellCenters[cellj]) <= cellDistFrontToBack)
+                    {
+                        backgroundNearestCell = cellj;
+                        cellDistFrontToBack = magSqr(cellCenters[celli] - cellCenters[cellj]);
+                    }
+                }
+            }
+
+
+            refinementField[backgroundNearestCell] = 1.0;
+        }
     }
-
-    // if (foundObject<turbulenceModel>(turbulenceModel::propertiesName))
-    // {
-    //     volScalarField::Boundary& refinementFieldBf = refinementField.boundaryFieldRef();
-
-    //     const turbulenceModel& model =
-    //         lookupObject<turbulenceModel>
-    //         (
-    //             turbulenceModel::propertiesName
-    //         );
-
-    //     const nearWallDist nwd(mesh_);
-    //     const volScalarField::Boundary& d = nwd.y();
-
-    //     // nut needed for wall function patches
-    //     tmp<volScalarField> tnut = model.nut();
-    //     const volScalarField::Boundary& nutBf = tnut().boundaryField();
-
-    //     // U needed for plain wall patches
-    //     const volVectorField::Boundary& UBf = model.U().boundaryField();
-
-    //     const fvPatchList& patches = mesh_.boundary();
-
-    //     forAll(patches, patchi)
-    //     {
-    //         const fvPatch& patch = patches[patchi];
-
-    //         if (isA<nutWallFunctionFvPatchScalarField>(nutBf[patchi]))
-    //         {
-    //             const nutWallFunctionFvPatchScalarField& nutPf =
-    //                 dynamic_cast<const nutWallFunctionFvPatchScalarField&>
-    //                 (
-    //                     nutBf[patchi]
-    //                 );
-
-    //             refinementFieldBf[patchi] = nutPf.refinementField();
-    //         }
-    //         else if (isA<wallFvPatch>(patch))
-    //         {
-    //             refinementFieldBf[patchi] =
-    //                 d[patchi]
-    //                *sqrt
-    //                 (
-    //                     model.nuEff(patchi)
-    //                    *mag(UBf[patchi].snGrad())
-    //                 )/model.nu(patchi);
-    //         }
-    //     }
-    // }
-    // else
-    // {
-    //     WarningInFunction
-    //         << "Unable to find turbulence model in the "
-    //         << "database: refinementFieldFunction will not be calculated" << endl;
-    //     return false;
-    // }
-
     return true;
 }
 

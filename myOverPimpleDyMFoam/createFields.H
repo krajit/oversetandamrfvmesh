@@ -91,18 +91,18 @@ volScalarField zoneIDscalarField
     mesh
 );
 
-volScalarField refinementField
-(
-    IOobject
-    (
-        "refinementField",
-        runTime.timeName(),
-        mesh,
-        IOobject::MUST_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar(dimless, Zero)
-);
+// volScalarField refinementField
+// (
+//     IOobject
+//     (
+//         "refinementField",
+//         runTime.timeName(),
+//         mesh,
+//         IOobject::MUST_READ,
+//         IOobject::AUTO_WRITE
+//     ),
+//     mesh,
+//     dimensionedScalar(dimless, Zero)
+// );
 
 
