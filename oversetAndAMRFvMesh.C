@@ -1193,8 +1193,9 @@ bool Foam::oversetAndAMRFvMesh::update()
         {
             refinementField[celli] = 2.0;
 
-            scalar cellDistFrontToBack = GREAT;
-            label backgroundNearestCell = 0;
+//            scalar cellDistFrontToBack = GREAT;
+//            label backgroundNearestCell = 0;
+             scalar frontToBackRadius = 0.00025; //TODO: change this to read it from dict
 
             // now loop over background mesh to find the background cell closest to this cellj
             forAll(cellCenters, cellj)
@@ -1202,15 +1203,16 @@ bool Foam::oversetAndAMRFvMesh::update()
                 // filter out the background mesh
                 if (zoneID[cellj] == 0)
                 {
-                    if (magSqr(cellCenters[celli] - cellCenters[cellj]) <= cellDistFrontToBack)
+                    if (mag(cellCenters[celli] - cellCenters[cellj]) <= frontToBackRadius)
                     {
-                        backgroundNearestCell = cellj;
-                        cellDistFrontToBack = magSqr(cellCenters[celli] - cellCenters[cellj]);
+                        // backgroundNearestCell = cellj;
+                        // cellDistFrontToBack = magSqr(cellCenters[celli] - cellCenters[cellj]);
+                        refinementField[cellj] = 1.0;
                     }
                 }
             }
 
-            refinementField[backgroundNearestCell] = 1.0;
+            //            refinementField[backgroundNearestCell] = 1.0;
         }
     }
 

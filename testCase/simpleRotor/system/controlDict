@@ -24,12 +24,12 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         1e-2;
+endTime         0.1;
 
 deltaT          1e-5;;
 
 writeControl    timeStep;
-writeInterval   10;
+writeInterval   50;
 
 //writeControl    adjustableRunTime;
 //writeInterval   0.00025; //0.01;

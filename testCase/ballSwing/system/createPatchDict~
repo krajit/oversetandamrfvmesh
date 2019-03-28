@@ -1,0 +1,73 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | foam-extend: Open Source CFD                    |
+|  \\    /   O peration     | Version:     3.2                                |
+|   \\  /    A nd           | Web:         http://www.foam-extend.org         |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      createPatchDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+matchTolerance 1e-3;
+
+pointSync true;
+
+// Patches to create.
+patchInfo
+(
+    {
+        // Name of new patch
+        name inlet;
+
+        // Type of new patch
+        dictionary
+        {
+            type wall;
+
+        }
+        // How to construct: either from 'patches' or 'set'
+        constructFrom set;
+        // If constructFrom = set : name of faceSet
+        set inlet;
+    }
+
+    {	
+	name outlet;
+	  dictionary
+        {
+            type wall;
+
+        }
+	constructFrom set;
+	set outlet;
+    }
+
+    {	
+	name ball1;
+	  dictionary
+        {
+            type wall;
+        }
+	constructFrom set;
+	set ball1;
+    }
+
+    {	
+	name ball2;
+	  dictionary
+        {
+            type wall;
+        }
+	constructFrom set;
+	set ball2;
+    }
+
+);
+
+// ************************************************************************* //
