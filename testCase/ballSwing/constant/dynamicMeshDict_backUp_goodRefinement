@@ -45,7 +45,7 @@ unrefineLevel   0.25;
 nBufferLayers   2;
 
 // Refine cells only up to maxRefinement levels
-maxRefinement   4;
+maxRefinement   3;
 
 // Stop refinement if maxCells reached
 maxCells        200000;
@@ -69,7 +69,7 @@ dumpLevel       true;
 
 //motionSolverLibs ("libtopoSixDoFRigidBodyMotion.so");
 
-//motionSolver   topoSixDoFRigidBodyMotion; //sixDoFRigidBodyMotion;
+motionSolver   topoSixDoFRigidBodyMotion; //sixDoFRigidBodyMotion;
 
 
 topoSixDoFRigidBodyMotionCoeffs
@@ -114,16 +114,16 @@ topoSixDoFRigidBodyMotionCoeffs
  }
 
 
-solver          multiSolidBodyMotionSolver;
+//solver          multiSolidBodyMotionSolver;
 
-multiSolidBodyMotionSolverCoeffs
-{
-    front
-    {
-        solidBodyMotionFunction linearMotion; //rotatingMotion;
-		velocity (30 0 0);
-    }
-}
+//multiSolidBodyMotionSolverCoeffs
+//{
+//    front
+//    {
+//        solidBodyMotionFunction linearMotion; //rotatingMotion;
+//		velocity (30 0 0);
+//    }
+//}
 
 
 // ************************************************************************* //

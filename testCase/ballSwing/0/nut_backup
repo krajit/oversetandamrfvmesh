@@ -38,8 +38,8 @@ boundaryField
 			scalarField nut(faceCenters.size(), 0.0);
 
 			scalar smoothNut = 0.0;
-			scalar seamNut   = 0.0;
-			scalar roughNut  = 0.0;
+			scalar seamNut   = 0.1;
+			scalar roughNut  = 0.01;
 			scalar PI = 3.14159265;
 
 
