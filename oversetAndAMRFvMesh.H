@@ -36,6 +36,10 @@ class oversetAndAMRFvMesh
 {
     // protected members copied for dynamicRefine2DFvMesh
   protected:
+
+    // AK: layer from overset to background
+    scalar maskThickness_;  // Ak: read this from dictionary in readDict()
+
     //- Mesh cutting engine
     hexRef2D meshCutter_;
 
@@ -170,11 +174,12 @@ public:
     // Writing
 
     //- Write using given format, version and compression
-    // virtual bool writeObject(
-    //     IOstream::streamFormat fmt,
-    //     IOstream::versionNumber ver,
-    //     IOstream::compressionType cmp,
-    //     const bool valid) const;
+    //virtual bool writeObject(
+    bool writeObject(
+        IOstream::streamFormat fmt,
+        IOstream::versionNumber ver,
+        IOstream::compressionType cmp,
+        const bool valid) const;
     //-------------------------------------------------
     // end dynamicRefine2DFvMesh function declaration
     //-------------------------------------------------

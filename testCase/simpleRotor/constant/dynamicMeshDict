@@ -19,6 +19,9 @@ dynamicFvMesh       oversetAndAMRFvMesh;
 
 oversetAndAMRFvMeshCoeffs
 {
+
+maskThickness 0.00025;
+
 nBufferLayersR 1;
 
 // How often to refine

@@ -178,6 +178,8 @@ void oversetAndAMRFvMesh::readDict()
     correctFluxes_ = List<Pair<word>>(refineDict.lookup("correctFluxes"));
 
     dumpLevel_ = Switch(refineDict.lookup("dumpLevel"));
+
+    maskThickness_ = readScalar(refineDict.lookup("maskThickness"));
 }
 
 // Refines cells, maps fields and recalculates (an approximate) flux
@@ -814,7 +816,7 @@ Foam::oversetAndAMRFvMesh::oversetAndAMRFvMesh(const IOobject &io)
                 mesh.time().timeName(),
                 mesh,
                 IOobject::NO_READ,
-                IOobject::NO_WRITE),
+                IOobject::AUTO_WRITE),
             mesh,
             dimensionedScalar(dimless, Zero)));
 
@@ -1186,25 +1188,26 @@ bool Foam::oversetAndAMRFvMesh::update()
     forAll(cellCenters, celli)
     {
         // reset
-        refinementField[celli] = -1.0;
+        refinementField[celli] = 0;
 
         // only loop over front mesh
         if (zoneID[celli] == 1)
         {
-            refinementField[celli] = 2.0;
+            refinementField[celli] = 2;
 
 //            scalar cellDistFrontToBack = GREAT;
 //            label backgroundNearestCell = 0;
-             scalar frontToBackRadius = 0.00025; //TODO: change this to read it from dict
+             scalar frontToBackRadius = maskThickness_; //0.00025; //TODO: change this to read it from dict
 
             // now loop over background mesh to find the background cell closest to this cellj
             forAll(cellCenters, cellj)
             {
                 // filter out the background mesh
-                if (zoneID[cellj] == 0)
+                if (zoneID[cellj] <= 0.5)
                 {
                     if (mag(cellCenters[celli] - cellCenters[cellj]) <= frontToBackRadius)
                     {
+
                         // backgroundNearestCell = cellj;
                         // cellDistFrontToBack = magSqr(cellCenters[celli] - cellCenters[cellj]);
                         refinementField[cellj] = 1.0;
@@ -1250,51 +1253,52 @@ bool Foam::oversetAndAMRFvMesh::update()
     return (isMeshMovingWithOverset || isMeshMovingWithRefine);
 }
 
-// bool Foam::oversetAndAMRFvMesh::writeObject
-// (
-//     IOstream::streamFormat fmt,
-//     IOstream::versionNumber ver,
-//     IOstream::compressionType cmp,
-//     const bool valid
-// ) const
-// {
-//     // Force refinement data to go to the current time directory.
-//     const_cast<hexRef8&>(meshCutter_).setInstance(time().timeName());
+bool Foam::oversetAndAMRFvMesh::writeObject
+(
+    IOstream::streamFormat fmt,
+    IOstream::versionNumber ver,
+    IOstream::compressionType cmp,
+    const bool valid
+) const
+{
+    // Force refinement data to go to the current time directory.
+    const_cast<hexRef2D&>(meshCutter_).setInstance(time().timeName());
 
-//     bool writeOk =
-//     (
-//         dynamicFvMesh::writeObject(fmt, ver, cmp, valid)
-//      && meshCutter_.write(valid)
-//     );
+    bool writeOk =
+    (
+        dynamicOversetFvMesh::writeObject(fmt, ver, cmp, valid)
+        //dynamicFvMesh::writeObject(fmt, ver, cmp, valid)
+     //&& meshCutter_.write(valid)
+    );
 
-//     if (dumpLevel_)
-//     {
-//         volScalarField scalarCellLevel
-//         (
-//             IOobject
-//             (
-//                 "cellLevel",
-//                 time().timeName(),
-//                 *this,
-//                 IOobject::NO_READ,
-//                 IOobject::AUTO_WRITE,
-//                 false
-//             ),
-//             *this,
-//             dimensionedScalar(dimless, Zero)
-//         );
+    if (dumpLevel_)
+    {
+        volScalarField scalarCellLevel
+        (
+            IOobject
+            (
+                "cellLevel",
+                time().timeName(),
+                *this,
+                IOobject::NO_READ,
+                IOobject::AUTO_WRITE,
+                false
+            ),
+            *this,
+            dimensionedScalar(dimless, Zero)
+        );
 
-//         const labelList& cellLevel = meshCutter_.cellLevel();
+        const labelList& cellLevel = meshCutter_.cellLevel();
 
-//         forAll(cellLevel, celli)
-//         {
-//             scalarCellLevel[celli] = cellLevel[celli];
-//         }
+        forAll(cellLevel, celli)
+        {
+            scalarCellLevel[celli] = cellLevel[celli];
+        }
 
-//         writeOk = writeOk && scalarCellLevel.write();
-//     }
+        writeOk = writeOk && scalarCellLevel.write();
+    }
 
-//     return writeOk;
-// }
+     return writeOk;
+}
 
 // ************************************************************************* //
