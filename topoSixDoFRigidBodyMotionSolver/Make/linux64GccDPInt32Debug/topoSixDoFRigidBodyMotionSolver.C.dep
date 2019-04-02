@@ -1,7 +1,6 @@
 $(OBJECTS_DIR)/topoSixDoFRigidBodyMotionSolver.C.dep: \
 topoSixDoFRigidBodyMotionSolver.C \
 topoSixDoFRigidBodyMotionSolver.H \
-$(WM_PROJECT_DIR)/src/sixDoFRigidBodyMotion/lnInclude/sixDoFRigidBodyMotionSolver.H \
 $(WM_PROJECT_DIR)/src/dynamicMesh/lnInclude/displacementMotionSolver.H \
 $(WM_PROJECT_DIR)/src/dynamicMesh/lnInclude/points0MotionSolver.H \
 $(WM_PROJECT_DIR)/src/dynamicMesh/lnInclude/motionSolver.H \

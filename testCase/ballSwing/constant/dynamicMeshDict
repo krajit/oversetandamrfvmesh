@@ -72,7 +72,7 @@ dumpLevel       true;
 motionSolver   topoSixDoFRigidBodyMotion; //sixDoFRigidBodyMotion;
 
 
-sixDoFRigidBodyMotionCoeffs
+topoSixDoFRigidBodyMotionCoeffs
  {
      patches         (ballIn);
      innerDistance   0.07;
