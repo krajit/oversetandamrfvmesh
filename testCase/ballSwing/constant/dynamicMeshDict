@@ -120,7 +120,7 @@ multiSolidBodyMotionSolverCoeffs
 {
     front
     {
-        solidBodyMotionFunction linearMotion; //rotatingMotion;
+        solidBodyMotionFunction sixDoFDynamicMotion; //rotatingMotion;
 		velocity (30 0 0);
     }
 }
