@@ -38,6 +38,8 @@ SourceFiles
 #include "primitiveFields.H"
 #include "point.H"
 
+#include "sixDoFRigidBodyMotion.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -54,6 +56,10 @@ class sixDoFDynamicMotion
     public solidBodyMotionFunction
 {
     // Private data
+
+            //- Six DoF motion object
+        sixDoFRigidBodyMotion motion_;
+
 
         //- Linear velocity
         vector velocity_;

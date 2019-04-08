@@ -51,7 +51,8 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::sixDoFDynamicMotion
     const Time& runTime
 )
 :
-    solidBodyMotionFunction(SBMFCoeffs, runTime)
+    solidBodyMotionFunction(SBMFCoeffs, runTime),
+          motion_(SBMFCoeffs,SBMFCoeffs)
 {
     read(SBMFCoeffs);
 }
