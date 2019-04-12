@@ -26,6 +26,13 @@ License
 #include "sixDoFDynamicMotion.H"
 #include "addToRunTimeSelectionTable.H"
 
+#include "polyMesh.H"
+#include "pointPatchDist.H"
+#include "pointConstraints.H"
+#include "uniformDimensionedFields.H"
+#include "forces.H"
+#include "mathematicalConstants.H"
+
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
 namespace Foam
@@ -52,7 +59,11 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::sixDoFDynamicMotion
 )
 :
     solidBodyMotionFunction(SBMFCoeffs, runTime),
-          motion_(SBMFCoeffs,SBMFCoeffs)
+          motion_(SBMFCoeffs,SBMFCoeffs),
+          curTimeIndex_(-1),
+          patches_(wordRes(SBMFCoeffs.lookup("patches"))),
+          rhoInf_(1.0),
+          rhoName_(SBMFCoeffs.lookupOrDefault<word>("rho", "rho"))
 {
     read(SBMFCoeffs);
 }
@@ -69,15 +80,110 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::~sixDoFDynamicMotion()
 Foam::septernion
 Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::transformation() const
 {
+    
+    /*
+    Ajit: Apr 9
+    This class is called by motion solver through this function.
+    The aim should be to 
+    - integrate force on the solid body patch,
+    - calculate the six dof motion 
+    - and return the motion as a septernion    
+    */
+
+//    Store the motion state at the beginning of the time-step
+    bool firstIter = false;
+    if (curTimeIndex_ != time_.time().timeIndex())
+    {
+        motion_.newTime();
+        curTimeIndex_ = time_.time().timeIndex();
+        firstIter = true;
+    }
+
+    // const scalar ramp = min(max((this->db().time().value() - 5)/10, 0), 1);
+    const scalar ramp = 1.0;
+
+
+    // add force
+    dictionary forcesDict;
+    forcesDict.add("type", functionObjects::forces::typeName);
+    forcesDict.add("patches", patches_);
+
+    forcesDict.add("rhoInf", rhoInf_);
+    forcesDict.add("rho", rhoName_);
+    forcesDict.add("CofR", motion_.centreOfRotation());
+
+
+    functionObjects::forces f("forces", time_, forcesDict);
+
+    f.calcForcesMoment();
+
+    dimensionedVector g("g", dimAcceleration, Zero);
+
+    // TODO: save the motion state before update
+    
+    // current center of mass
+    vector pi = motion_.state().centreOfRotation ();
+
+    // current orientation
+    tensor Qi = motion_.state().Q();
+
+
+    motion_.update(
+        firstIter,
+        ramp * (f.forceEff() + motion_.mass() * g.value()),
+        ramp * (f.momentEff() + motion_.mass() * (motion_.momentArm() ^ g.value())),
+        time_.deltaTValue(),
+        time_.deltaT0Value());
+
+
+    // TODO: extract the motion state after  the update
+    // new center of mass
+    vector pn = motion_.state().centreOfRotation ();
+
+    // new orientation
+    tensor Qn = motion_.state().Q();
+
+    // TODO: create a septernion by comparting the before and after state
+    // return that value
+
+    // check
+    // R  = new * inv(old)
+    // call the constructor of rotation quaternion using the rotation tensor
+    //R Qi vl = Qo vl
+
+    //quaternion R(Qn & inv(Qi));
+
+    //septernion TR(pn-pi,R );
+
+
     scalar t = time_.value();
 
-    // Translation of centre of gravity with constant velocity
-    const vector displacement = velocity_*t;
+    // // // Translation of centre of gravity with constant velocity
+    // const vector displacement = velocity_*t;
+    // //const vector displacement = pn-pi;
 
-    quaternion R(1);
-    septernion TR(septernion(-displacement)*R);
+    quaternion R(inv(Qn));
+    septernion TR(-pn,R);
 
     DebugInFunction << "Time = " << t << " transformation: " << TR << endl;
+
+    Info << "Time = " << t << " force: " << f.forceEff() << endl;
+    Info << "+++++++++++" << endl;
+
+
+    Info << "Time = " << t << " displacement: " << pn-pi << endl;
+    Info << "+++++++++++" << endl;
+
+
+    Info << "Time = " << t << " transformation: " << TR << endl;
+    Info << "+++++++++++" << endl;
+
+    ofstream myfile;
+  myfile.open ("path.csv",std::ios::app);
+  myfile << t << '\t' << f.forceEff()[0] << '\t' << f.forceEff()[1] << '\n';
+  myfile.close();
+
+
 
     return TR;
 }

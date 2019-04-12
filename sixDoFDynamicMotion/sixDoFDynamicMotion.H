@@ -57,8 +57,27 @@ class sixDoFDynamicMotion
 {
     // Private data
 
-            //- Six DoF motion object
-        sixDoFRigidBodyMotion motion_;
+        //- Six DoF motion object
+        // mutable becuase transformation() function is const.
+        mutable sixDoFRigidBodyMotion motion_;
+
+        //- Current time index (used for updating)
+        mutable label curTimeIndex_;
+
+        wordRes patches_;
+
+        // //- Patches to integrate forces
+        // const labelHashSet patchSet_;
+
+        //- Reference density required by the forces object for
+        //  incompressible calculations, required if rho == rhoInf
+        scalar rhoInf_;
+
+        //- Name of density field, optional unless used for an
+        //  incompressible simulation, when this needs to be specified
+        //  as rhoInf
+        word rhoName_;
+
 
 
         //- Linear velocity
