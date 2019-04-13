@@ -1185,6 +1185,10 @@ bool Foam::oversetAndAMRFvMesh::update()
     // get the bounding box containing the zoneID with labels 1
     const vectorField &cellCenters = mesh.C();
 
+    // TODO: refinement field seem to be not getting mapped to the new mesh after refinement
+    Info << "refinement size " << refinementField.size() << endl;
+    Info << "+++++++++++++++++++++++++" << endl;
+
     forAll(cellCenters, celli)
     {
         // reset
