@@ -19,7 +19,7 @@ dynamicFvMesh       oversetAndAMRFvMesh;
 oversetAndAMRFvMeshCoeffs
 {
 
-maskThickness 0.1;
+maskThickness 0.07;
 
 nBufferLayersR 4;
 
@@ -33,16 +33,16 @@ field           refinementField; //cellMask;
 
 // Refine field inbetween lower..upper
 lowerRefineLevel 0.001; //0.001;
-upperRefineLevel 1.5; //0.999;
+upperRefineLevel 2; //0.999;
 
 // If value < unrefineLevel unrefine
-unrefineLevel   0.25;
+unrefineLevel   0;
 
 // Have slower than 2:1 refinement
 nBufferLayers   2;
 
 // Refine cells only up to maxRefinement levels
-maxRefinement   3;
+maxRefinement   1;
 
 // Stop refinement if maxCells reached
 maxCells        200000;

@@ -1193,7 +1193,7 @@ bool Foam::oversetAndAMRFvMesh::update()
         // only loop over front mesh
         if (zoneID[celli] == 1)
         {
-            refinementField[celli] = 2;
+            refinementField[celli] = 6;
 
 //            scalar cellDistFrontToBack = GREAT;
 //            label backgroundNearestCell = 0;
@@ -1203,15 +1203,12 @@ bool Foam::oversetAndAMRFvMesh::update()
             forAll(cellCenters, cellj)
             {
                 // filter out the background mesh
-                if (zoneID[cellj] <= 0.5)
+                if (zoneID[cellj] == 0)
                 {
                     if (mag(cellCenters[celli] - cellCenters[cellj]) <= frontToBackRadius)
                     {
-
-                        // backgroundNearestCell = cellj;
-                        // cellDistFrontToBack = magSqr(cellCenters[celli] - cellCenters[cellj]);
-                        refinementField[cellj] = 1.0;
-                    }
+                        refinementField[cellj] = 2.0;
+                    } 
                 }
             }
 

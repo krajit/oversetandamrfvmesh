@@ -159,31 +159,22 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::transformation() const
     scalar t = time_.value();
 
     // // // Translation of centre of gravity with constant velocity
-    // const vector displacement = velocity_*t;
+    const vector displacement = velocity_*t;
     // //const vector displacement = pn-pi;
 
     quaternion R(inv(Qn));
     septernion TR(-pn,R);
 
+    // quaternion R(1);
+    // septernion TR(septernion(-displacement)*R);
+
     DebugInFunction << "Time = " << t << " transformation: " << TR << endl;
 
-    Info << "Time = " << t << " force: " << f.forceEff() << endl;
-    Info << "+++++++++++" << endl;
-
-
-    Info << "Time = " << t << " displacement: " << pn-pi << endl;
-    Info << "+++++++++++" << endl;
-
-
-    Info << "Time = " << t << " transformation: " << TR << endl;
-    Info << "+++++++++++" << endl;
-
+    
     ofstream myfile;
-  myfile.open ("path.csv",std::ios::app);
-  myfile << t << '\t' << f.forceEff()[0] << '\t' << f.forceEff()[1] << '\n';
-  myfile.close();
-
-
+    myfile.open ("path.csv",std::ios::app);
+    myfile << t << '\t' << f.forceEff()[0] << '\t' << f.forceEff()[1] << '\n';
+    myfile.close();
 
     return TR;
 }
