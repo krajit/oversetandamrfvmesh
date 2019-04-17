@@ -51,11 +51,11 @@ namespace Foam
 extern "C"
 {
     // dynamicCode:
-    // SHA1 = b076c47cf5973be90ce21ceebfc3b51ab3b96e24
+    // SHA1 = 17affbd46d524d024dd58844a10b904fb6735ffa
     //
     // unique function name that can be checked if the correct library version
     // has been loaded
-    void cricketBall_b076c47cf5973be90ce21ceebfc3b51ab3b96e24(bool load)
+    void cricketBall_17affbd46d524d024dd58844a10b904fb6735ffa(bool load)
     {
         if (load)
         {
@@ -78,7 +78,7 @@ makeRemovablePatchTypeField
 
 
 const char* const cricketBallFixedValueFvPatchScalarField::SHA1sum =
-    "b076c47cf5973be90ce21ceebfc3b51ab3b96e24";
+    "17affbd46d524d024dd58844a10b904fb6735ffa";
 
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -94,7 +94,7 @@ cricketBallFixedValueFvPatchScalarField
 {
     if (false)
     {
-        Info<<"construct cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24"
+        Info<<"construct cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa"
             " from patch/DimensionedField\n";
     }
 }
@@ -113,7 +113,7 @@ cricketBallFixedValueFvPatchScalarField
 {
     if (false)
     {
-        Info<<"construct cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24"
+        Info<<"construct cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa"
             " from patch/DimensionedField/mapper\n";
     }
 }
@@ -131,7 +131,7 @@ cricketBallFixedValueFvPatchScalarField
 {
     if (false)
     {
-        Info<<"construct cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24"
+        Info<<"construct cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa"
             " from patch/dictionary\n";
     }
 }
@@ -147,7 +147,7 @@ cricketBallFixedValueFvPatchScalarField
 {
     if (false)
     {
-        Info<<"construct cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24"
+        Info<<"construct cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa"
             " as copy\n";
     }
 }
@@ -164,7 +164,7 @@ cricketBallFixedValueFvPatchScalarField
 {
     if (false)
     {
-        Info<<"construct cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24 "
+        Info<<"construct cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa "
             "as copy/DimensionedField\n";
     }
 }
@@ -177,7 +177,7 @@ cricketBallFixedValueFvPatchScalarField::
 {
     if (false)
     {
-        Info<<"destroy cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24\n";
+        Info<<"destroy cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa\n";
     }
 }
 
@@ -193,11 +193,11 @@ void cricketBallFixedValueFvPatchScalarField::updateCoeffs()
 
     if (false)
     {
-        Info<<"updateCoeffs cricketBall sha1: b076c47cf5973be90ce21ceebfc3b51ab3b96e24\n";
+        Info<<"updateCoeffs cricketBall sha1: 17affbd46d524d024dd58844a10b904fb6735ffa\n";
     }
 
 //{{{ begin code
-    #line 0 "/home/ajit/OpenFOAM/ajit-v1806/oversetAndAMRFvMesh/testCase/ballSwing/0/nut.boundaryField.ballIn"
+    #line 0 "/home/ajit/OpenFOAM/ajit-v1806/oversetAndAMRFvMesh/testCase/ballSwing_turbulent/0/nut.boundaryField.ballIn"
 const label topCell = 28;
 
             vectorField faceCenters(this->patch().Cf());
@@ -207,8 +207,8 @@ const label topCell = 28;
 			scalarField nut(faceCenters.size(), 0.0);
 
 			scalar smoothNut = 0.0;
-			scalar seamNut   = 0.1;
-			scalar roughNut  = 0.01;
+			scalar seamNut   = 0.0; //0.1;
+			scalar roughNut  = 0.0; //0.01;
 			scalar PI = 3.14159265;
 
 

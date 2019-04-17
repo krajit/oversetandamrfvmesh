@@ -21,7 +21,7 @@ oversetAndAMRFvMeshCoeffs
 
 maskThickness 0.1;
 
-nBufferLayersR 4;
+nBufferLayersR 1;
 
 // How often to refine
 refineInterval  1;
@@ -32,17 +32,17 @@ field           refinementField; //cellMask;
 
 
 // Refine field inbetween lower..upper
-lowerRefineLevel 0.001; //0.001;
-upperRefineLevel 1.99; //0.999;
+lowerRefineLevel 0.5; //0.001;
+upperRefineLevel 2.5; //0.999;
 
 // If value < unrefineLevel unrefine
-unrefineLevel   0;
+unrefineLevel   10;
 
 // Have slower than 2:1 refinement
-nBufferLayers   3;
+nBufferLayers   1;
 
 // Refine cells only up to maxRefinement levels
-maxRefinement  3;
+maxRefinement  4;
 
 // Stop refinement if maxCells reached
 maxCells        200000;
@@ -74,6 +74,7 @@ multiSolidBodyMotionSolverCoeffs
         solidBodyMotionFunction sixDoFDynamicMotion; //rotatingMotion;
 		
         patches         (ballIn);
+		g               (0 0 0); 
         innerDistance   0.07;
         outerDistance   0.1;
         centreOfMass    (0 0 0 );
@@ -83,8 +84,8 @@ multiSolidBodyMotionSolverCoeffs
         rhoName         rhoInf;
         rho             rhoInf;
         rhoInf          1.0;
-        accelerationRelaxation 0.8;
-        accelerationDamping 0.95;
+        accelerationRelaxation 1;// 0.8;
+        accelerationDamping 1;//0.95;
         report          on;
         reportToFile    on;
         solver

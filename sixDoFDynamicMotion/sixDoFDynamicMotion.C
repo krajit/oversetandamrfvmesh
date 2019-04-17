@@ -59,6 +59,7 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::sixDoFDynamicMotion
 )
 :
     solidBodyMotionFunction(SBMFCoeffs, runTime),
+          dict_(SBMFCoeffs),
           motion_(SBMFCoeffs,SBMFCoeffs),
           curTimeIndex_(-1),
           patches_(wordRes(SBMFCoeffs.lookup("patches"))),
@@ -66,6 +67,9 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::sixDoFDynamicMotion
           rhoName_(SBMFCoeffs.lookupOrDefault<word>("rho", "rho"))
 {
     read(SBMFCoeffs);
+
+//    g_ = SBMFCoeffs.lookupObject<uniformDimensionedVectorField>("g");
+
 }
 
 
@@ -118,6 +122,12 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::transformation() const
     f.calcForcesMoment();
 
     dimensionedVector g("g", dimAcceleration, Zero);
+    if (dict_.found("g"))
+    {
+        dict_.lookup("g") >> g;
+    }
+
+    Info << "g = " << g << endl;
 
     // TODO: save the motion state before update
     
@@ -162,19 +172,20 @@ Foam::solidBodyMotionFunctions::sixDoFDynamicMotion::transformation() const
     const vector displacement = velocity_*t;
     // //const vector displacement = pn-pi;
 
-    quaternion R(inv(Qn));
-    septernion TR(-pn,R);
+    quaternion R(Qn);
+ // TODO: add rotation later
+    septernion TR(pn,R);
 
-    // quaternion R(1);
+
     // septernion TR(septernion(-displacement)*R);
 
     DebugInFunction << "Time = " << t << " transformation: " << TR << endl;
 
     
-    ofstream myfile;
-    myfile.open ("path.csv",std::ios::app);
-    myfile << t << '\t' << f.forceEff()[0] << '\t' << f.forceEff()[1] << '\n';
-    myfile.close();
+    // ofstream myfile;
+    // myfile.open ("path.csv",std::ios::app);
+    // myfile << t << '\t' << f.forceEff()[0] << '\t' << f.forceEff()[1] << '\n';
+    // myfile.close();
 
     return TR;
 }

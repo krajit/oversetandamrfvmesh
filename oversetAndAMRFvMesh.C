@@ -1186,22 +1186,25 @@ bool Foam::oversetAndAMRFvMesh::update()
     const vectorField &cellCenters = mesh.C();
 
     // TODO: refinement field seem to be not getting mapped to the new mesh after refinement
-    Info << "refinement size " << refinementField.size() << endl;
-    Info << "+++++++++++++++++++++++++" << endl;
 
+
+    // reset
     forAll(cellCenters, celli)
     {
-        // reset
         refinementField[celli] = 0;
+    }
 
+
+   forAll(cellCenters, celli)
+    {
         // only loop over front mesh
         if (zoneID[celli] == 1)
         {
             refinementField[celli] = 6;
 
-//            scalar cellDistFrontToBack = GREAT;
-//            label backgroundNearestCell = 0;
-             scalar frontToBackRadius = maskThickness_; //0.00025; //TODO: change this to read it from dict
+            //  scalar cellDistFrontToBack = GREAT;
+            //  label backgroundNearestCell = 0;
+            scalar frontToBackRadius = maskThickness_; //0.00025; //TODO: change this to read it from dict
 
             // now loop over background mesh to find the background cell closest to this cellj
             forAll(cellCenters, cellj)
@@ -1215,10 +1218,9 @@ bool Foam::oversetAndAMRFvMesh::update()
                     } 
                 }
             }
-
-            //            refinementField[backgroundNearestCell] = 1.0;
         }
     }
+
 
     // refine first
     bool isMeshMovingWithRefine = refineUpdate();

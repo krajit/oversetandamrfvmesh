@@ -39,7 +39,7 @@ SourceFiles
 #include "point.H"
 
 #include "sixDoFRigidBodyMotion.H"
-
+#include "uniformDimensionedFields.H"
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -56,6 +56,9 @@ class sixDoFDynamicMotion
     public solidBodyMotionFunction
 {
     // Private data
+
+        // 
+        dictionary dict_;
 
         //- Six DoF motion object
         // mutable becuase transformation() function is const.
@@ -77,7 +80,6 @@ class sixDoFDynamicMotion
         //  incompressible simulation, when this needs to be specified
         //  as rhoInf
         word rhoName_;
-
 
 
         //- Linear velocity
